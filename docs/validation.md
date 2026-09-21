@@ -25,7 +25,11 @@ private build configuration. Normal dynamic clocks were used for cold boots.
 | USB-network SSH identification banner | 22.586 s | 22.225–22.928 s |
 
 [Sanitized boot samples](results/yocto-r39-base-boot.json) use the same SCPI
-command-send reference and readiness definitions as the Ubuntu comparison below.
+command-send reference as the Ubuntu comparison below. All accepted Ubuntu
+captures showed an automatic-login announcement followed by a shell prompt;
+Yocto showed a normal username prompt. The UART timestamps record these different
+prompt events and do not establish equivalent authenticated-console readiness.
+
 The provisioning boot, including first-boot root filesystem growth, is excluded.
 The initial USB diagnostic run is separate: CUDA completed in 21.693 s but SSH
 had no route within 40 s. Upstream random gadget MACs and a one-address DHCP pool

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "image": "vision-card.png",
+  "sha256": "21677efa83564dd6d81b534d6f3e0a7e166c0bfb1c2977756259011a3711eaa9",
+  "dimensions": [
+    768,
+    512
+  ],
+  "expected": {
+    "code": "JAJ27",
+    "circle_count": 3,
+    "circle_color": "red"
+  },
+  "generator": "generate_vision_card.py",
+  "pillow_version": "10.2.0",
+  "font": "DejaVuSansMono-Bold.ttf",
+  "font_sha256": "3a3c502eeff669a231549e80df9f7c49de109bafe303170409e905d0b31a38fe"
+}

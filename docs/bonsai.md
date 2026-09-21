@@ -101,13 +101,26 @@ curl --fail-with-body --max-time 300 \
   --data '{"model":"bonsai2-27b","messages":[{"role":"user","content":"What is 17 multiplied by 23? Reply with only the integer."}],"temperature":0,"seed":27,"max_tokens":128,"chat_template_kwargs":{"enable_thinking":false},"stream":false}'
 ```
 
-The expected answer is `391`. For a direct comparison, restore and use the
-original private `bonsai_bench.py` client and its `vision-card.png` /
-`vision-card.json` assets. Its seven checks are arithmetic, exact instruction,
-exact JSON, three completed repeated text requests, and one synthetic-image
-request. Preserve temperature 0, seed 27, thinking disabled, 128 output tokens,
-and disabled prompt-prefix reuse. The vision answer must identify code `JAJ27`,
-three circles and color `red`. Keep responses and model files private.
+The expected answer is `391`. The original comparison workload is now included
+as the [repository client and synthetic assets](../benchmarks/bonsai/README.md).
+Run it from a repository checkout on the Jetson, or copy `benchmarks/bonsai/`
+there with its adjacent PNG and JSON manifest:
+
+```bash
+python3 benchmarks/bonsai/bonsai_bench.py \
+  --base-url http://127.0.0.1:8081 --model bonsai2-27b \
+  --suite all --repeats 3 --max-tokens 128 \
+  --output-dir /data/bonsai2/results/http-vision-001
+```
+
+Choose a new private results directory for each run. The seven checks are
+arithmetic, exact instruction, exact JSON, three completed repeated text
+requests, and one synthetic-image request. The client preserves temperature 0,
+seed 27, thinking disabled, 128 output tokens, and disabled prompt-prefix reuse.
+The vision answer must identify code `JAJ27`, three circles and color `red`.
+Keep responses, server properties and model files private. The public client
+adds an SPDX header and updates its description, so its file hash differs from
+the historical copy; executable workload logic and image bytes are unchanged.
 
 Report client first-visible-output latency separately from server prompt/decode
 timings. Model-loading time, Linux boot readiness and complete application
