@@ -48,6 +48,8 @@ first. No automatic flashing occurs during a build.
 
 [Validation results](docs/validation.md) distinguish host checks, the measured
 Ubuntu comparison baseline, and pending Yocto hardware qualification.
+The separate [fast-boot experiment](docs/fastboot.md) adds optional kernel
+tuning for controlled comparisons; it is excluded from the baseline build.
 
 Startup measurements must report cold power to UART login, network/SSH,
 and CUDA computation readiness separately. A minimal Linux readiness marker

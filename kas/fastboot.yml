@@ -1,0 +1,11 @@
+header:
+  version: 17
+repos:
+  ark:
+    layers:
+      meta-ark-fastboot:
+local_conf_header:
+  fastboot: |
+    # Optional kernel-only experiment; retain the full UEFI/security profile.
+    ARK_BPMP_DEBUGFS_ASYNC = "1"
+    KERNEL_ARGS:append = " quiet loglevel=3 jaj_fastboot.bpmp_debugfs_async=1 jaj_fastboot.bpmp_debugfs_delay_ms=0"
