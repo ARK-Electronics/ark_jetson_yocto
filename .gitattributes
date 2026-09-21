@@ -1,0 +1,2 @@
+# Patch context intentionally contains leading spaces before tabs and blank context lines.
+*.patch whitespace=-blank-at-eol,-space-before-tab

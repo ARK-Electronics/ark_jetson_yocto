@@ -1,0 +1,99 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: MIT
+"""Grow only the mounted ext4 root on JAJ's NVMe APP partition."""
+import os
+from pathlib import Path
+import stat
+import subprocess
+import sys
+
+
+class RootfsError(RuntimeError):
+    pass
+
+
+def mounted_app(mountinfo=Path("/proc/self/mountinfo"),
+                sys_blocks=Path("/sys/dev/block"), dev_dir=Path("/dev"),
+                stat_path=os.stat):
+    roots = []
+    for line in mountinfo.read_text().splitlines():
+        fields = line.split()
+        if len(fields) >= 10 and fields[4] == "/":
+            roots.append(fields)
+    if len(roots) != 1:
+        raise RootfsError("expected exactly one visible root mount")
+    fields = roots[0]
+    try:
+        separator = fields.index("-", 6)
+        filesystem, _source, super_options = fields[separator + 1:separator + 4]
+        major, minor = (int(value) for value in fields[2].split(":"))
+    except (ValueError, IndexError) as error:
+        raise RootfsError("invalid root mount identity") from error
+    if filesystem != "ext4" or fields[3] != "/":
+        raise RootfsError("root must be a complete ext4 filesystem")
+    if "rw" not in fields[5].split(",") or "rw" not in super_options.split(","):
+        raise RootfsError("root filesystem must be writable")
+    device_number = os.makedev(major, minor)
+    if stat_path("/").st_dev != device_number:
+        raise RootfsError("root device changed while reading mount information")
+    block = sys_blocks / fields[2]
+    properties = dict(line.split("=", 1) for line in
+                      (block / "uevent").read_text().splitlines() if "=" in line)
+    expected = {"DEVNAME": "nvme0n1p1", "DEVTYPE": "partition",
+                "PARTN": "1", "PARTNAME": "APP"}
+    if any(properties.get(key) != value for key, value in expected.items()):
+        raise RootfsError("mounted root is not NVMe partition nvme0n1p1 named APP")
+    if (block / "partition").read_text().strip() != "1":
+        raise RootfsError("unexpected NVMe partition number")
+    device = dev_dir / "nvme0n1p1"
+    node = stat_path(device)
+    if not stat.S_ISBLK(node.st_mode) or node.st_rdev != device_number:
+        raise RootfsError("NVMe device node does not match the mounted root")
+    return device
+
+
+def persist_success(marker, device):
+    # StateDirectory is created by systemd. Replace atomically only after
+    # resize2fs succeeds, so interruption/failure leaves the next boot retryable.
+    temporary = marker.with_name(".completed.tmp")
+    try:
+        fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
+        with os.fdopen(fd, "w") as output:
+            output.write("resize2fs completed for " + str(device) + "\n")
+            output.flush()
+            os.fsync(output.fileno())
+        os.replace(temporary, marker)
+        directory_fd = os.open(marker.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def grow(marker=Path("/var/lib/ark-grow-rootfs/completed"),
+         identify=mounted_app, run=subprocess.run, resize2fs="@RESIZE2FS@"):
+    if marker.exists():
+        print("ARK root filesystem growth already completed", flush=True)
+        return
+    device = identify()
+    print("Growing mounted ext4 APP filesystem on " + str(device), flush=True)
+    # No size argument: native resize2fs grows to the existing partition size.
+    # This service never changes a partition table or selects another device.
+    run([resize2fs, str(device)], check=True)
+    persist_success(marker, device)
+    print("ARK root filesystem growth completed", flush=True)
+
+
+def main():
+    try:
+        grow()
+    except (OSError, ValueError, RootfsError, subprocess.CalledProcessError) as error:
+        print("ARK root filesystem growth failed: " + str(error), file=sys.stderr, flush=True)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

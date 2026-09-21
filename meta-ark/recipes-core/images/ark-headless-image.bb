@@ -3,7 +3,7 @@ LICENSE = "MIT"
 inherit core-image
 IMAGE_FEATURES += "ssh-server-openssh"
 IMAGE_INSTALL:append = " \
-    ark-network ark-access ark-bench \
+    ark-network ark-access ark-bench ark-grow-rootfs \
     systemd-networkd systemd-analyze \
     l4t-usb-device-mode tegra-nvpmodel tegra-tools-jetson-clocks tegra-tools-tegrastats \
     tegra-libraries-cuda cuda-cudart libcublas \

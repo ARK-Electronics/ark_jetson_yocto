@@ -1,0 +1,19 @@
+[Unit]
+Description=Grow the JAJ NVMe APP ext4 filesystem
+After=local-fs.target
+RequiresMountsFor=/ /var/lib/ark-grow-rootfs
+Before=ark-os-ready.service ark-cuda-ready.service
+ConditionPathExists=!/var/lib/ark-grow-rootfs/completed
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+StateDirectory=ark-grow-rootfs
+StateDirectoryMode=0755
+ExecStart=@LIBEXECDIR@/ark-grow-rootfs
+TimeoutStartSec=300
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=multi-user.target

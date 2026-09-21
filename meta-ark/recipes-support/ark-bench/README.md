@@ -13,6 +13,8 @@ Timestamps come from `/proc/uptime`, whose displayed precision is normally 10 ms
 
 Both observers use `DefaultDependencies=no`, explicit shutdown ordering, and `After=multi-user.target`. This prevents their `WantedBy=multi-user.target` links from adding the normal opposing target ordering. The CUDA observer also waits for `systemd-modules-load.service` and requires `nvpmodel.service`; it does not bypass NVIDIA power initialization. The startup smoke initializes a GPU context, so subsequent benchmark initialization is a **new process on an already booted GPU**, not first GPU use since power-on.
 
+The JAJ image also requires `ark-grow-rootfs.service` before either readiness observer. First boot after flashing grows the mounted ext4 APP filesystem to the already allocated NVMe partition, and that provisioning time is included in its markers. Exclude that first boot from boot-time comparisons. Confirm `/var/lib/ark-grow-rootfs/completed` and `df -h /` before collecting subsequent cold boots. Growth failure suppresses both ready markers and is retried on the next boot.
+
 ## Run benchmarks
 
 ```sh
