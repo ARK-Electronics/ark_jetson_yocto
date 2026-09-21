@@ -1,0 +1,49 @@
+From: ARK Electronics
+Subject: [PATCH] initrd-flash: disconnect the nearest USB device, never its hub
+
+The regular expression truncates a downstream device such as 1-5.3 to
+1-5, disconnecting the entire hub and unrelated sibling devices. Walk
+sysfs to the nearest DEVTYPE=usb_device and retain its complete name.
+Fail closed for root hubs, hub-class devices, and incomplete entries.
+
+Upstream-Status: Pending
+
+--- a/initrd-flash.sh
++++ b/initrd-flash.sh
+@@ -279,6 +279,26 @@
+     return 1
+ }
+ 
++# Return the nearest USB device, preserving every downstream hub port number.
++# Refuse hubs and incomplete sysfs entries rather than disconnecting an ancestor.
++usb_device_from_sysfs() {
++    local syspath="$1"
++    local usbdev devclass
++    while [ -n "$syspath" ] && [ "$syspath" != / ]; do
++        if grep -qx 'DEVTYPE=usb_device' "$syspath/uevent" 2>/dev/null; then
++            usbdev=$(basename "$syspath")
++            [[ "$usbdev" =~ ^[0-9]+-[0-9]+(\.[0-9]+)*$ ]] || return 1
++            devclass=$(cat "$syspath/bDeviceClass" 2>/dev/null) || return 1
++            [[ "$devclass" =~ ^[[:xdigit:]]{2}$ ]] || return 1
++            [ "$devclass" != 09 ] || return 1
++            printf '%s\n' "$usbdev"
++            return 0
++        fi
++        syspath=$(dirname "$syspath")
++    done
++    return 1
++}
++
+ unmount_and_release() {
+     local mnt="$1"
+     local dev="$2"
+@@ -302,7 +322,8 @@
+     local devname=$(basename "$dev")
+     local syspath=$(readlink -f "/sys/block/$devname" 2>/dev/null)
+     if [ -n "$syspath" ]; then
+-        local usbdev=$(echo "$syspath" | grep -o 'usb[0-9]*/[0-9]-[0-9]*' | tail -1 | cut -d/ -f2)
++        local usbdev
++        usbdev=$(usb_device_from_sysfs "$syspath") || return 1
+         if [ -n "$usbdev" ]; then
+             local sysfs_usb
+             for sysfs_usb in /sys/bus/usb/drivers/usb /dev/.lxc/sys/bus/usb/drivers/usb; do

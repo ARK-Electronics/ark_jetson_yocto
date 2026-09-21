@@ -41,10 +41,13 @@ power verification is part of hardware qualification.
 
 ## Flashing and tests
 
-Instructions and measured results will be recorded after the first build.
-The `.tegraflash-tar.zst` artifact contains the initrd flash tools. Flashing
-rewrites the target NVMe, including when using `--external-only`; preserve a
-verified backup first. No automatic flashing occurs during a build.
+Use the [flashing and recovery guide](docs/flashing.md) to validate and flash
+the `.tegraflash-tar.zst` artifact. The wrapper defaults to replacing the whole
+NVMe while preserving compatible QSPI firmware. Preserve a verified backup
+first. No automatic flashing occurs during a build.
+
+[Validation results](docs/validation.md) distinguish host checks, the measured
+Ubuntu comparison baseline, and pending Yocto hardware qualification.
 
 Startup measurements must report cold power to UART login, network/SSH,
 and CUDA computation readiness separately. A minimal Linux readiness marker
