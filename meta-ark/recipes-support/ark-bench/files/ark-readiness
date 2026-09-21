@@ -1,0 +1,47 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# Started only by the paired systemd units; /run/ark-bench is root-owned.
+set -eu
+emit_marker() {
+    printf '%s\n' "$1"
+    # journal+console can choose tty0 when both display and TCU consoles exist.
+    # Never redirect to a regular file; only an explicitly selected character
+    # device is eligible. A unit drop-in may override this for another board.
+    console=${ARK_READINESS_TTY:-/dev/ttyTCU0}
+    if [ -c "$console" ]; then
+        if ! printf '%s\n' "$1" > "$console"; then
+            printf 'ARK_READINESS_UART_WRITE_FAILED\n' >&2
+        fi
+    else
+        printf 'ARK_READINESS_UART_UNAVAILABLE\n' >&2
+    fi
+}
+read_uptime() {
+    read -r uptime ignored < /proc/uptime
+    case "$uptime" in ''|*[!0-9.]*) exit 1 ;; esac
+}
+case "${1-}" in
+    os)
+        read_uptime
+        printf '{"schema_version":1,"milestone":"multi_user_target","uptime_s":%s}\n' "$uptime" > /run/ark-bench/os-ready.json
+        emit_marker "ARK_OS_READY uptime_s=$uptime milestone=multi_user_target"
+        ;;
+    cuda)
+        rm -f /run/ark-bench/cuda-ready.json
+        temporary=$(mktemp /run/ark-bench/cuda-result.XXXXXX)
+        trap 'rm -f "$temporary"' EXIT HUP INT TERM
+        if /usr/bin/ark-cuda-bench --smoke > "$temporary" 2>/run/ark-bench/cuda-stderr.txt; then
+            mv "$temporary" /run/ark-bench/cuda-smoke.json
+            read_uptime
+            printf '{"schema_version":1,"milestone":"cuda_integer_smoke_passed","uptime_s":%s}\n' "$uptime" > /run/ark-bench/cuda-ready.json
+            emit_marker "ARK_CUDA_READY uptime_s=$uptime milestone=cuda_integer_smoke_passed"
+        else
+            status=$?
+            mv "$temporary" /run/ark-bench/cuda-smoke.json
+            read_uptime
+            emit_marker "ARK_CUDA_FAILED uptime_s=$uptime status=$status"
+            exit "$status"
+        fi
+        ;;
+    *) printf 'Usage: ark-readiness os|cuda\n' >&2; exit 2 ;;
+esac

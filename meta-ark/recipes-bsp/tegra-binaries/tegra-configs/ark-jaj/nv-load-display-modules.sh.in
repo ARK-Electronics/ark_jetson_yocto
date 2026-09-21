@@ -1,0 +1,12 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# Headless JAJ: systemd-modules-load finishes before nvpower and nvpmodel.
+# Retain compute initialization and the marker consumed by NVIDIA userspace.
+# Display modules remain installed for an explicitly configured display image.
+set -eu
+if [ "@VARIANT@" != "nvgpu-l4t" ]; then
+    echo "ARK JAJ requires the Orin nvgpu-l4t driver variant" >&2
+    exit 1
+fi
+printf '%s\n' "@VARIANT@" > /run/nvidia-gpu-driver-active
+modprobe nvgpu

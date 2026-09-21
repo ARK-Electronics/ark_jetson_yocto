@@ -7,4 +7,4 @@ do_install() {
     install -d ${D}${sysconfdir}/systemd/network
     install -m 0644 ${S}/80-ethernet.network ${D}${sysconfdir}/systemd/network/
 }
-RDEPENDS:${PN} = "systemd-networkd systemd-resolved"
+RDEPENDS:${PN} = "systemd-networkd"

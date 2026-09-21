@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Record ARK multi-user milestone in Linux uptime
+# This service observes the target. Disabling default dependencies prevents the
+# target's Wants= link from adding an opposing Before=multi-user.target edge.
+DefaultDependencies=no
+After=multi-user.target
+Before=shutdown.target
+Conflicts=shutdown.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+RuntimeDirectory=ark-bench
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
+ExecStart=/usr/libexec/ark-readiness os
+Environment=ARK_READINESS_TTY=/dev/ttyTCU0
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=10
+
+[Install]
+WantedBy=multi-user.target

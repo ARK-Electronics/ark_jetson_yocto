@@ -1,0 +1,8 @@
+header:
+  version: 17
+local_conf_header:
+  bonsai: |
+    IMAGE_INSTALL:append = " prism-llama"
+    # Select NVIDIA's complete MAXN_SUPER mode before the first CUDA context.
+    # This benchmark variant requires adequate power delivery and active cooling.
+    NVPMODEL_CONFIG_DEFAULT = "0"

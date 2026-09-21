@@ -10,7 +10,7 @@ RUN locale-gen en_US.UTF-8 && python3 -m venv /opt/kas && /opt/kas/bin/pip insta
 ARG BUILD_UID=1000
 ARG BUILD_GID=1000
 RUN if getent passwd ubuntu >/dev/null; then userdel -r ubuntu; fi; \
-    groupadd -g ${BUILD_GID} builder && useradd -m -u ${BUILD_UID} -g ${BUILD_GID} -s /bin/bash builder
+    (getent group ${BUILD_GID} || groupadd -g ${BUILD_GID} builder) && useradd -m -u ${BUILD_UID} -g ${BUILD_GID} -s /bin/bash builder
 ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 PATH=/opt/kas/bin:$PATH
 USER builder
 WORKDIR /work

@@ -14,6 +14,10 @@ This project uses its own small systemd distribution, without a desktop.
 Use an x86-64 Linux host with Docker, at least 250 GB free SSD space, and
 preferably 32 GB RAM. The initial build uses four workers for a 16 GB host.
 Source downloads and sstate are retained in ignored local directories.
+BitBake runs as your UID inside the container. The wrapper grants SYS_ADMIN
+inside that container for task network namespaces on Ubuntu hosts; it does
+not change host AppArmor/sysctl settings. Only this repository is mounted.
+Use this builder only with source and recipes you trust.
 
 Create an ignored `local.yml` with your own SSH **public** key:
 
@@ -25,7 +29,8 @@ local_conf_header:
     ARK_SSH_PUBLIC_KEY = "ssh-ed25519 AAAA... your-key"
 ```
 
-Then run `./scripts/build.sh`. Root password login is disabled. SSH uses the
+Then run `./scripts/build.sh`. To include the pinned Bonsai runtime, run
+`./scripts/build.sh build kas/jaj.yml:kas/bonsai.yml:local.yml`. Root password login is disabled. SSH uses the
 provided key over Ethernet DHCP or the USB gadget at 192.168.55.1. Never
 commit private keys, local.yml, device backups or build output.
 

@@ -1,0 +1,7 @@
+{
+  "ecdsa256": "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBMLpJeOziM6hb9crTPdXSub7dbMvNu3nAP65oJqHriUQQ67Ug1dr83q3caq7lWkJmgbZiIHtvlGGbYaAnBwJyCo= ark-validator-fixture",
+  "ecdsa384": "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBBPRlr10/EJal9GY98rzGsl1iAo4ph/1SGD1IPSKaY5j9prAFTzitIIL+OpIrokEKRYjnvK2D/MuMQR+eUoODZOJIp15JkPMlH31j2nO6GNmK/ZJNG3QfALEpLCAKxAMSQ== ark-validator-fixture",
+  "ecdsa521": "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAE7T0YU90LXM3RsYtjBb4OT/1rNYSu7rYhWNOTGS/2+EtnHuq+nleu7bv64AGwHOTshRndHnN2WMvwlLXPH+AtTBQF7A50ubSpJKOMQSLcciqFRq54ShPG+79xW5JaHqwggeSlUlLjPpbxwWRnglFV1duC6KyeWeAnlH65wgCGnnXDBjQ== ark-validator-fixture",
+  "rsa2048": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDb7X0r+HPFNyYAz1Lw6wp/anzSNwn6YZ8kabSvnnPobTDnHcPlBllkHdYMVNWAVO/U1jLCUBPHJ9v0fNhP0AAj1xllCFvaESGUTq+izPoNxACZZF/53x/Ib4+e7ljeVfmqUWOydhkDLRHIZysZU4DuIFkuHvmGVMXOcHHPuBh5QxDG7fe+JIoYn095Ksyg1+YH2+r7AlJPf6VwozA+tdVxwSL+/1xde5tgKOMEJRqxxKc2+vtWjtaL7WfFvBGgfhmWz9CU38OtMEMtgP/PgKwQ+NcJSXs1A0P+4nzosUCA1m3lwX7EqxzNKtek+HGKreiASXpSkJZbHHPtRs1gKFaN ark-validator-fixture",
+  "ed25519": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMiSgKSIFTDjjtimawoLdeEC5TZFBXQPDTm9ftnBaE0G ark-validator-fixture"
+}
