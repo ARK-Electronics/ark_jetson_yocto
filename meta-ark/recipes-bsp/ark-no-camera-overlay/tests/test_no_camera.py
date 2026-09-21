@@ -185,5 +185,29 @@ class NoCameraTests(unittest.TestCase):
         self.assertEqual((destination / "boot/extlinux/extlinux.conf").read_text(), config)
 
 
+class NoCameraDependencyTests(unittest.TestCase):
+    @unittest.skipUnless(os.environ.get("ARK_NO_CAMERA_TASK_GRAPH"),
+                         "Set ARK_NO_CAMERA_TASK_GRAPH to the combined variant's bitbake -g output")
+    def test_generated_flash_and_extlinux_dependencies(self):
+        # Inspect BitBake's resolved graph: existing deploy files must not hide
+        # a missing provider dependency, as they did in the original variant.
+        graph = Path(os.environ["ARK_NO_CAMERA_TASK_GRAPH"]).read_text()
+        edges = set(re.findall(r'"([^"\n]+)" -> "([^"\n]+)"', graph))
+        image = "ark-headless-image.do_image_tegraflash_tar"
+        stock = "nvidia-kernel-oot-dtbo"
+        custom = "ark-no-camera-overlay"
+        required = {
+            (image, stock + ".do_populate_sysroot"),
+            (image, custom + ".do_populate_sysroot"),
+            ("l4t-launcher-extlinux.do_copy_dtb_overlays", stock + ".do_populate_sysroot"),
+            ("l4t-launcher-extlinux.do_prepare_recipe_sysroot", custom + ".do_populate_sysroot"),
+        }
+        self.assertFalse(required - edges, "Missing resolved task edges: " + repr(required - edges))
+        for recipe in (stock, custom):
+            self.assertIn('"' + recipe + '.do_deploy"', graph)
+            self.assertIn((recipe + ".do_populate_sysroot", recipe + ".do_install"), edges)
+            self.assertIn((recipe + ".do_install", recipe + ".do_compile"), edges)
+
+
 if __name__ == "__main__":
     unittest.main()

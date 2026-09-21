@@ -3,5 +3,7 @@ header:
 local_conf_header:
   no-camera: |
     # Explicit camera-less bench variant; apply after retained firmware overlays.
-    PREFERRED_PROVIDER_virtual/dtbo = "ark-no-camera-overlay"
+    # Preserve NVIDIA's virtual/dtbo provider for carveouts, OP-TEE and SKU overlays.
+    DEPENDS:append:pn-l4t-launcher-extlinux = " ark-no-camera-overlay"
+    DTB_EXTRA_DEPS:append = " ark-no-camera-overlay:do_populate_sysroot"
     UBOOT_EXTLINUX_FDTOVERLAYS = "ark_no_csi.dtbo"

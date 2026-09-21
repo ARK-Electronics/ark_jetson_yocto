@@ -13,8 +13,10 @@ MAXN_SUPER Bonsai runtime, optional BPMP tuning and camera-less setup:
 scripts/build.sh build kas/jaj.yml:kas/bonsai.yml:kas/fastboot.yml:kas/no-camera.yml:local.yml
 ```
 
-The base configuration and camera drivers remain unchanged. The fragment selects
-`ark-no-camera-overlay` as `virtual/dtbo`; OE4T's `l4t-launcher-extlinux` recipe
+The base configuration and camera drivers remain unchanged. The fragment keeps
+NVIDIA's `virtual/dtbo` provider, retaining the carveout, OP-TEE and module overlays
+required for flash packaging. It adds `ark-no-camera-overlay` as a supplemental
+dependency for flash packaging and `l4t-launcher-extlinux`. That native recipe
 installs and, when configured, signs `/boot/ark_no_csi.dtbo`. Its extlinux entry
 contains `OVERLAYS /boot/ark_no_csi.dtbo` alongside the existing explicit `FDT`.
 This fragment selects the complete extlinux overlay list; do not combine it with
@@ -57,6 +59,14 @@ GPU configuration therefore remain identical. They also execute OE4T's actual
 extlinux generation and install functions in a temporary directory to check the
 `OVERLAYS` entry and installed path. Alternate artifacts can be selected through
 `ARK_NO_CAMERA_BASE_DTB` and `ARK_NO_CAMERA_SENSOR_DTBO`.
+
+To check the resolved flash and extlinux dependencies as well, generate the
+combined variant's task graph with `bitbake -g ark-headless-image` in its kas
+shell, then set `ARK_NO_CAMERA_TASK_GRAPH` to that build directory's
+`task-depends.dot` when running the tests. This check requires both NVIDIA's
+stock overlay provider and the supplemental overlay, including their compile,
+install, sysroot and deploy tasks. It does not rely on files left by an earlier
+build. Without a supplied graph, only this graph check is skipped.
 
 Hardware validation remains separate: verify the runtime mux status is disabled,
 the two IMX219 probe attempts disappear, and CUDA, NVMe and required PCIe devices

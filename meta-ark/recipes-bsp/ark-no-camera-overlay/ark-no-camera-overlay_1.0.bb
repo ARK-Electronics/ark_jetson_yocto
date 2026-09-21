@@ -5,9 +5,10 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 inherit devicetree
 
-# The base DTB remains provided by ark-jaj-devicetree. Only kas/no-camera.yml
-# selects this separate provider; l4t-launcher-extlinux copies/signs/packages it.
-PROVIDES = "virtual/dtbo"
+# This supplements NVIDIA's virtual/dtbo provider. Replacing that provider
+# would omit firmware carveout, OP-TEE and SKU overlays from flash packaging.
+# Only kas/no-camera.yml adds this recipe to the boot-file dependencies.
+PROVIDES = ""
 COMPATIBLE_MACHINE = "^ark-jaj-orin-nx$"
 SRC_URI = "file://ark_no_csi.dts"
 DT_FILES = "ark_no_csi.dts"
