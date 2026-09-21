@@ -1,0 +1,92 @@
+Subject: [PATCH] Give each module stable USB network addresses
+
+Derive role-specific locally administered unicast addresses from the module
+serial before libusbgx imports the schema and binds its UDC. Reject missing
+identity and install the generated schema atomically so failed attempts can
+retry. This keeps host interface names stable across cold boots.
+
+Upstream-Status: Inappropriate [ARK board-specific USB identity policy]
+
+--- a/l4t-gadget-config-setup.sh
++++ b/l4t-gadget-config-setup.sh
+@@ -1,4 +1,5 @@
+ #!/bin/sh
++set -eu
+ [ -d /sys/module/libcomposite ] || modprobe libcomposite
+ [ -d /sys/module/bridge ] || modprobe bridge
+ [ -d /run/usbgx ] || mkdir /run/usbgx
+@@ -7,7 +8,51 @@
+     echo "ERR: missing gadget schema template" >&2
+     exit 1
+ fi
++# The module serial, unlike gadget interfaces, survives cold boots. Never use
++# a shared fallback identity when the board has no usable serial.
+ sernum=$(cat /proc/device-tree/serial-number 2>/dev/null | tr -d '\000')
+-[ -n "$sernum" ] || sernum="UNKNOWN"
+-sed -e"s,@SERIALNUMBER@,$sernum," /usr/share/usbgx/l4t.schema.in > /run/usbgx/l4t.schema
+-chmod 0644 /run/usbgx/l4t.schema
++case "$sernum" in
++    ""|UNKNOWN|*[!A-Za-z0-9._-]*)
++        echo "ERR: missing or invalid module serial for USB network identity" >&2
++        exit 1
++        ;;
++esac
++[ "${#sernum}" -le 128 ] || exit 1
++
++usb_mac() {
++    # Keep this namespace and role mapping stable across software upgrades.
++    digest=$(printf 'ark-jaj-usb-mac-v1:%s:%s' "$sernum" "$1" | sha256sum)
++    digest=${digest%% *}
++    case "$digest" in
++        ""|*[!0-9a-f]*) return 1 ;;
++    esac
++    [ "${#digest}" -eq 64 ] || return 1
++    first=$(printf '%.2s' "$digest")
++    tail=$(printf '%.12s' "$digest" | sed 's/../&:/g;s/^[^:]*://;s/:$//')
++    # Clear multicast and set locally administered, retaining 46 hash bits.
++    printf '%02x:%s\n' "$(((0x$first | 2) & 254))" "$tail"
++}
++rndis_dev=$(usb_mac rndis-device)
++rndis_host=$(usb_mac rndis-host)
++ecm_dev=$(usb_mac ecm-device)
++ecm_host=$(usb_mac ecm-host)
++seen=" "
++for mac in "$rndis_dev" "$rndis_host" "$ecm_dev" "$ecm_host"; do
++    case "$seen" in
++        *" $mac "*) echo "ERR: duplicate USB MAC derivation" >&2; exit 1 ;;
++    esac
++    seen="$seen$mac "
++done
++
++# A failed setup must not leave a partial schema that the next attempt reuses.
++schema_tmp=$(mktemp /run/usbgx/.l4t.schema.XXXXXX)
++trap 'rm -f "$schema_tmp"' 0
++trap 'exit 1' HUP INT TERM
++sed -e "s,@SERIALNUMBER@,$sernum," \
++    -e "s,@RNDIS_DEV_ADDR@,$rndis_dev," \
++    -e "s,@RNDIS_HOST_ADDR@,$rndis_host," \
++    -e "s,@ECM_DEV_ADDR@,$ecm_dev," \
++    -e "s,@ECM_HOST_ADDR@,$ecm_host," \
++    /usr/share/usbgx/l4t.schema.in > "$schema_tmp"
++chmod 0644 "$schema_tmp"
++mv "$schema_tmp" /run/usbgx/l4t.schema
+--- a/l4t.schema.in
++++ b/l4t.schema.in
+@@ -31,6 +31,8 @@
+         type = "rndis";
+         attrs :
+         {
++            dev_addr = "@RNDIS_DEV_ADDR@";
++            host_addr = "@RNDIS_HOST_ADDR@";
+         };
+         os_descs = (
+             {
+@@ -54,6 +56,8 @@
+         type = "ecm";
+         attrs :
+         {
++            dev_addr = "@ECM_DEV_ADDR@";
++            host_addr = "@ECM_HOST_ADDR@";
+         };
+         os_descs = ( );
+     };

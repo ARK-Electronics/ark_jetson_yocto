@@ -14,7 +14,7 @@ RUN dpkg-deb --extract /tmp/ca-certificates.deb /tmp/ca-bootstrap && \
     printf 'Types: deb\nURIs: https://snapshot.ubuntu.com/ubuntu/%s/\nSuites: noble noble-updates noble-security\nComponents: main universe\nSigned-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n' "$UBUNTU_SNAPSHOT" > /etc/apt/sources.list.d/ubuntu.sources && \
     apt-get -o Acquire::Check-Valid-Until=false -o APT::Update::Error-Mode=any update && \
     apt-get -o Acquire::Check-Valid-Until=false install -y --no-install-recommends \
-        bc binutils bmap-tools bzip2 ca-certificates cpio device-tree-compiler \
+        bc binutils bmap-tools bzip2 ca-certificates cpio cpp device-tree-compiler \
         dosfstools e2fsprogs file gdisk kmod libstdc++6 libusb-1.0-0 \
         libxml2-utils lz4 openssl parted python3 python3-cryptography \
         python3-pycryptodome python3-yaml rsync sudo tar udev unzip usbutils \

@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "reference": "scpi_power_on_command_send",
+  "electrical_edge_measured": false,
+  "timing_note": "Elapsed times start immediately before the host SCPI power-on command write. Command/output latency and any board POR holdoff (including an approximately 2-second holdoff) remain included; no delay is subtracted.",
+  "uart_timing_note": "UART observations use the host receive timestamp of the chunk containing the completed match, not individual wire-byte timing. Reported Linux uptime is retained separately.",
+  "reboot_note": "A repeated Linux-start banner makes the run ineligible; only first-boot UART observations are retained. Reboots with no observable banner cannot be inferred.",
+  "sanitization": "Only fixed definitions, numeric measurements and allowlisted status/issue codes are retained. Input paths, identities, addresses, raw UART and private configuration are omitted.",
+  "terminal_kind": "login",
+  "terminal_pattern_source": "default",
+  "definitions": {
+    "os_ready": "First ARK_OS_READY with a complete numeric uptime_s after the selected reference; multi-user observer, not application readiness.",
+    "cuda_ready": "First ARK_CUDA_READY with a complete numeric uptime_s after the selected reference; a verified CUDA integer computation.",
+    "ssh_banner": "First valid SSH identification banner observed by the capture probe; authentication and an interactive session are not tested.",
+    "uart_terminal": "First matching UART login prompt; authentication has not been performed."
+  },
+  "run_count": 3,
+  "runs": [
+    {
+      "run_index": 1,
+      "capture_status": "ready",
+      "eligible_for_aggregate": true,
+      "issues": [],
+      "observations": {
+        "os_ready": {
+          "elapsed_s": 19.3477548,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 12.28
+        },
+        "cuda_ready": {
+          "elapsed_s": 19.53284442,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 12.46
+        },
+        "uart_terminal": {
+          "elapsed_s": 21.585187202,
+          "source": "uart_chunk_receive"
+        },
+        "ssh_banner": {
+          "elapsed_s": 22.224893829,
+          "source": "timeline_ssh_banner"
+        }
+      },
+      "power_references_in_capture": 1,
+      "probe_poll_interval_s": 0.1,
+      "requested_capture_duration_s": 40.0,
+      "kernel_boot_banners_observed": 1
+    },
+    {
+      "run_index": 2,
+      "capture_status": "ready",
+      "eligible_for_aggregate": true,
+      "issues": [],
+      "observations": {
+        "os_ready": {
+          "elapsed_s": 19.759213866,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 12.7
+        },
+        "cuda_ready": {
+          "elapsed_s": 19.935031828,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 12.88
+        },
+        "uart_terminal": {
+          "elapsed_s": 21.987633111,
+          "source": "uart_chunk_receive"
+        },
+        "ssh_banner": {
+          "elapsed_s": 22.58595271,
+          "source": "timeline_ssh_banner"
+        }
+      },
+      "power_references_in_capture": 1,
+      "probe_poll_interval_s": 0.1,
+      "requested_capture_duration_s": 40.0,
+      "kernel_boot_banners_observed": 1
+    },
+    {
+      "run_index": 3,
+      "capture_status": "ready",
+      "eligible_for_aggregate": true,
+      "issues": [],
+      "observations": {
+        "os_ready": {
+          "elapsed_s": 20.342081977,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 13.28
+        },
+        "cuda_ready": {
+          "elapsed_s": 20.522966555,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 13.46
+        },
+        "uart_terminal": {
+          "elapsed_s": 22.571603475,
+          "source": "uart_chunk_receive"
+        },
+        "ssh_banner": {
+          "elapsed_s": 22.928437946,
+          "source": "timeline_ssh_banner"
+        }
+      },
+      "power_references_in_capture": 1,
+      "probe_poll_interval_s": 0.1,
+      "requested_capture_duration_s": 40.0,
+      "kernel_boot_banners_observed": 1
+    }
+  ],
+  "aggregates": {
+    "os_ready": {
+      "included_samples": [
+        {
+          "run_index": 1,
+          "elapsed_s": 19.3477548
+        },
+        {
+          "run_index": 2,
+          "elapsed_s": 19.759213866
+        },
+        {
+          "run_index": 3,
+          "elapsed_s": 20.342081977
+        }
+      ],
+      "sample_count": 3,
+      "minimum_three_samples_met": true,
+      "missing_count": 0,
+      "excluded_run_count": 0,
+      "median_s": 19.759213866,
+      "minimum_s": 19.3477548,
+      "maximum_s": 20.342081977
+    },
+    "cuda_ready": {
+      "included_samples": [
+        {
+          "run_index": 1,
+          "elapsed_s": 19.53284442
+        },
+        {
+          "run_index": 2,
+          "elapsed_s": 19.935031828
+        },
+        {
+          "run_index": 3,
+          "elapsed_s": 20.522966555
+        }
+      ],
+      "sample_count": 3,
+      "minimum_three_samples_met": true,
+      "missing_count": 0,
+      "excluded_run_count": 0,
+      "median_s": 19.935031828,
+      "minimum_s": 19.53284442,
+      "maximum_s": 20.522966555
+    },
+    "ssh_banner": {
+      "included_samples": [
+        {
+          "run_index": 1,
+          "elapsed_s": 22.224893829
+        },
+        {
+          "run_index": 2,
+          "elapsed_s": 22.58595271
+        },
+        {
+          "run_index": 3,
+          "elapsed_s": 22.928437946
+        }
+      ],
+      "sample_count": 3,
+      "minimum_three_samples_met": true,
+      "missing_count": 0,
+      "excluded_run_count": 0,
+      "median_s": 22.58595271,
+      "minimum_s": 22.224893829,
+      "maximum_s": 22.928437946
+    },
+    "uart_terminal": {
+      "included_samples": [
+        {
+          "run_index": 1,
+          "elapsed_s": 21.585187202
+        },
+        {
+          "run_index": 2,
+          "elapsed_s": 21.987633111
+        },
+        {
+          "run_index": 3,
+          "elapsed_s": 22.571603475
+        }
+      ],
+      "sample_count": 3,
+      "minimum_three_samples_met": true,
+      "missing_count": 0,
+      "excluded_run_count": 0,
+      "median_s": 21.987633111,
+      "minimum_s": 21.585187202,
+      "maximum_s": 22.571603475
+    }
+  }
+}

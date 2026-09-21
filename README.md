@@ -1,8 +1,9 @@
 # ARK Jetson Yocto
 
 Headless Yocto Linux for the ARK Electronics Just a Jetson carrier with an
-Orin NX 16GB (P3767-0000). Board bring-up and hardware qualification are in
-progress; no Yocto boot-time or performance result is claimed yet.
+Orin NX 16GB (P3767-0000). The base image has been built, flashed and tested
+on the JAJ, including three cold boots and CPU/CUDA correctness and performance.
+Fast-boot and Bonsai variant qualification is in progress.
 
 The layer set is pinned to Yocto 6.0 Wrynose and OE4T meta-tegra for NVIDIA
 L4T R39.2.1 / JetPack 7.2.1, CUDA 13.2 and Linux 6.8.12. Pins correspond to
@@ -47,9 +48,11 @@ NVMe while preserving compatible QSPI firmware. Preserve a verified backup
 first. No automatic flashing occurs during a build.
 
 [Validation results](docs/validation.md) distinguish host checks, the measured
-Ubuntu comparison baseline, and pending Yocto hardware qualification.
+Ubuntu comparison baseline, and measured Yocto base-image qualification.
 The separate [fast-boot experiment](docs/fastboot.md) adds optional kernel
 tuning for controlled comparisons; it is excluded from the baseline build.
+An independent [no-camera variant](docs/no-camera.md) suppresses retained firmware's
+camera probes on benches without a connected camera.
 
 Startup measurements must report cold power to UART login, network/SSH,
 and CUDA computation readiness separately. A minimal Linux readiness marker

@@ -1,0 +1,7 @@
+header:
+  version: 17
+local_conf_header:
+  no-camera: |
+    # Explicit camera-less bench variant; apply after retained firmware overlays.
+    PREFERRED_PROVIDER_virtual/dtbo = "ark-no-camera-overlay"
+    UBOOT_EXTLINUX_FDTOVERLAYS = "ark_no_csi.dtbo"

@@ -1,0 +1,270 @@
+{
+  "schema_version": 1,
+  "platform": "ARK Just a Jetson Orin NX 16GB",
+  "os": "ARK Electronics Headless Jetson Linux 0.1 / Yocto Wrynose / L4T R39.2.1",
+  "kernel": "6.8.12-l4t-r39.2.1-1021.21",
+  "power_mode": "MAXN_SUPER (0)",
+  "clock_policy": "jetson_clocks; CPU, GPU and EMC frequencies locked",
+  "cuda": "13.2",
+  "compiler": "GCC 15.3.0 / nvcc 13.2.86",
+  "validation": {
+    "collection_date_utc": "2026-09-21",
+    "collector": "scripts/bench-target.py",
+    "single_collection_session": true,
+    "same_boot": true,
+    "all_metadata_queries_succeeded": true,
+    "all_13_collector_commands_exit_status_zero": true,
+    "stored_benchmark_stdout_matches_summary": true,
+    "cpu_known_answer_independently_checked": true,
+    "cpu_and_cuda_passed": true,
+    "startup_cuda_smoke_passed": true,
+    "startup_cuda_smoke_verified_elements": 65536,
+    "startup_smoke_scope": "Earlier in the same boot; timed CUDA benchmark initializes a new process after the GPU has already been used."
+  },
+  "build": {
+    "cxx_compiler": {
+      "id": "GNU",
+      "version": "15.3.0"
+    },
+    "cuda_compiler": {
+      "id": "NVIDIA",
+      "version": "13.2.86",
+      "host_compiler": "GNU 15.3.0"
+    },
+    "openssl_runtime": "OpenSSL 3.5.8 25 Aug 2026",
+    "cmake_build_type": "",
+    "cpu_relevant_compile_flags": [
+      "-O2",
+      "-g",
+      "-std=gnu++17",
+      "-mbranch-protection=standard",
+      "-fstack-protector-strong",
+      "-D_FORTIFY_SOURCE=2",
+      "-Wformat",
+      "-Wformat-security",
+      "-Werror=format-security",
+      "-fvisibility-inlines-hidden"
+    ],
+    "cuda_device_architecture": "SM87 native code (87-real)",
+    "cuda_relevant_compile_flags": [
+      "--gpu-architecture=compute_87",
+      "--gpu-code=sm_87",
+      "--generate-code=arch=compute_87,code=[sm_87]",
+      "-std=c++17",
+      "-Xcompiler=-O2",
+      "-Xcompiler=-mbranch-protection=standard",
+      "-Xcompiler=-fstack-protector-strong",
+      "-Xcompiler=-D_FORTIFY_SOURCE=2",
+      "-Xcompiler=-Wformat",
+      "-Xcompiler=-Wformat-security",
+      "-Xcompiler=-Werror=format-security"
+    ],
+    "cuda_explicit_nvcc_optimization_flag": null,
+    "cuda_fast_math_enabled": false,
+    "cuda_runtime_linkage": "shared",
+    "flags_scope": "Relevant optimization, language, architecture and hardening flags from the generated build; build paths, sysroot/search paths and debug-prefix mappings omitted.",
+    "source_sha256": {
+      "CMakeLists.txt": "37fe1976bb1b983e9e567cc92736aa88144a9f127407a4d2e6be9afce60bf821",
+      "cpu-bench.cpp": "f7ca46cd26b77e194a3b826821520f56afcf566d574c278d682e92e567650000",
+      "cuda-bench.cu": "1f728425e54641f4094c50e5d36a3b823bcafdb789ddd619ddac982666ada7b3",
+      "bench-common.h": "87704a769712c6751abfcd34430bbaaf511f42641d6676c96874656293f7160e"
+    }
+  },
+  "settings": {
+    "online_cpu_count": 8,
+    "cpu_min_max_current_mhz": 1984,
+    "gpu_min_max_current_mhz": 1173,
+    "emc_min_max_current_mhz": 3199,
+    "active_gpu_tpcs": 4,
+    "native_fan": {
+      "during_collection_clock_query": {
+        "controller": "nvfancontrol",
+        "dynamic_control_reported": true,
+        "pwm": 87,
+        "pwm_enable": 1
+      },
+      "after_benchmark_and_dynamic_clock_restore": {
+        "service": "nvfancontrol.service",
+        "ActiveState": "active",
+        "SubState": "running",
+        "Result": "success"
+      },
+      "scope": "Fan service status was queried after the benchmark and clock restoration; PWM settings were captured with the benchmark metadata."
+    }
+  },
+  "telemetry": {
+    "tool": "tegrastats",
+    "samples": 232,
+    "capture_timestamp_span_seconds": 29,
+    "scope": "Surrounding capture includes benchmark collection and idle time. It is not aligned to individual timed samples; these ranges are capture context, not per-sample thermal measurements.",
+    "reported_clocks_mhz": {
+      "cpu": {
+        "minimum": 1984,
+        "maximum": 1984
+      },
+      "gpu": {
+        "minimum": 1172,
+        "maximum": 1172
+      },
+      "emc": {
+        "minimum": 3199,
+        "maximum": 3199
+      }
+    },
+    "gpu_frequency_note": "Clock settings report 1173 MHz; tegrastats reports 1172 MHz throughout this capture.",
+    "temperatures_c": {
+      "cpu": {
+        "minimum": 55.468,
+        "maximum": 57.093
+      },
+      "cv0": {
+        "minimum": 51.218,
+        "maximum": 52.531
+      },
+      "cv1": {
+        "minimum": 51.312,
+        "maximum": 52.593
+      },
+      "cv2": {
+        "minimum": 48.156,
+        "maximum": 49.468
+      },
+      "gpu": {
+        "minimum": 53.031,
+        "maximum": 55.687
+      },
+      "soc0": {
+        "minimum": 51.281,
+        "maximum": 52.625
+      },
+      "soc1": {
+        "minimum": 51.781,
+        "maximum": 53.0
+      },
+      "soc2": {
+        "minimum": 49.437,
+        "maximum": 50.812
+      },
+      "tj": {
+        "minimum": 55.468,
+        "maximum": 57.093
+      }
+    },
+    "gpu_utilization_percent": {
+      "minimum": 0,
+      "maximum": 99
+    },
+    "emc_utilization_percent": {
+      "minimum": 0,
+      "maximum": 19
+    },
+    "reported_input_power_mw": {
+      "minimum": 8037,
+      "maximum": 15867
+    }
+  },
+  "measurements": [
+    {
+      "schema_version": 1,
+      "benchmark": "openssl_sha256_fixed_data_v1",
+      "passed": true,
+      "threads": 1,
+      "backend": "OpenSSL 3.5.8 25 Aug 2026",
+      "mib_per_repeat": 256,
+      "bytes_per_repeat": 268435456,
+      "block_bytes": 1048576,
+      "expected_sha256": "486cc817b95d853d3c357ff283b204c0144bd255e73fe2deb1389493b257e3c0",
+      "initialization_and_known_answer_ms": 1.347227,
+      "warmup_ms": 212.469737,
+      "samples": [
+        {
+          "wall_ms": 212.365312,
+          "mib_per_second": 1205.46994
+        },
+        {
+          "wall_ms": 212.379712,
+          "mib_per_second": 1205.388206
+        },
+        {
+          "wall_ms": 212.359487,
+          "mib_per_second": 1205.503006
+        }
+      ],
+      "total_wall_ms": 851.622834
+    },
+    {
+      "schema_version": 1,
+      "benchmark": "cuda_vector_add_u32_v1",
+      "passed": true,
+      "smoke": false,
+      "device": {
+        "index": 0,
+        "name": "Orin",
+        "compute_major": 8,
+        "compute_minor": 7,
+        "total_memory_bytes": 16279904256
+      },
+      "cuda_runtime_version": 13020,
+      "cuda_driver_version": 13020,
+      "elements": 4194304,
+      "verified_elements_per_check": 4194304,
+      "initialization_ms": 52.021978,
+      "device_allocation_ms": 7.743645,
+      "input_copy_wall_ms": 4.816833,
+      "first_kernel_event_ms": 1.262079954,
+      "first_kernel_wall_ms": 1.287322,
+      "first_output_copy_wall_ms": 2.928795,
+      "warmup_ms": 3.118367,
+      "iterations_per_sample": 200,
+      "samples": [
+        {
+          "event_ms": 105.6579514,
+          "mean_kernel_ms": 0.5282897353,
+          "logical_effective_gb_per_second": 95.27280693
+        },
+        {
+          "event_ms": 105.6480942,
+          "mean_kernel_ms": 0.5282404423,
+          "logical_effective_gb_per_second": 95.28169607
+        },
+        {
+          "event_ms": 105.6316833,
+          "mean_kernel_ms": 0.5281584263,
+          "logical_effective_gb_per_second": 95.29649894
+        }
+      ],
+      "total_wall_ms_before_cleanup": 415.724189
+    }
+  ],
+  "throughput_summary": {
+    "cpu_sha256_mib_per_second": {
+      "samples": [
+        1205.46994,
+        1205.388206,
+        1205.503006
+      ],
+      "median": 1205.46994,
+      "minimum": 1205.388206,
+      "maximum": 1205.503006
+    },
+    "cuda_logical_effective_gb_per_second": {
+      "samples": [
+        95.27280693,
+        95.28169607,
+        95.29649894
+      ],
+      "median": 95.28169607,
+      "minimum": 95.27280693,
+      "maximum": 95.29649894
+    }
+  },
+  "comparison_limits": [
+    "Three timed samples per workload were collected within one process after warmup, not three independent boots or benchmark sessions.",
+    "Ubuntu baseline used GCC 13.3.0, OpenSSL 3.0.13 and CMake Release; this Yocto build uses GCC 15.3.0, OpenSSL 3.5.8 and an empty CMake build type with CPU -O2 and CUDA host -O2. Its generated nvcc command has no explicit optimization-level flag. This is not an OS-only comparison.",
+    "Both builds use nvcc 13.2.86 and native SM87 code; runtime and driver report CUDA 13.2.",
+    "CPU throughput measures single-thread OpenSSL SHA-256, which can use CPU crypto instructions; it is not general CPU or model inference throughput.",
+    "CUDA throughput is logical vector-add bandwidth counting two reads and one write. It is not a measurement of physical DRAM traffic, matrix throughput or model inference.",
+    "CPU known-answer and every timed digest were checked. CUDA verifies the entire output after its first kernel and again after all timed batches; it does not verify every individual launch.",
+    "Native benchmark timing excludes SSH transport. Initialization, allocation, transfers and warmup are separate from steady-state samples."
+  ]
+}

@@ -18,7 +18,6 @@ LIC_FILES_CHKSUM = " \
 SRC_URI = "git://github.com/PrismML-Eng/llama.cpp.git;protocol=https;nobranch=1"
 SRCREV = "d8f26eec76da6d09bb708bcba51ef64b8cd868a3"
 PV = "0.2.0+prism10683+git"
-S = "${UNPACKDIR}/git"
 
 COMPATIBLE_MACHINE = "(tegra234)"
 
@@ -71,7 +70,7 @@ do_install() {
         case "$library" in
             *.so) [ ! -L "$library" ] || continue ;;
         esac
-        cp -a "$library" ${D}${libdir}/
+        cp -a --no-preserve=ownership "$library" ${D}${libdir}/
     done
 
     install -d ${D}${datadir}/licenses/${BPN}
