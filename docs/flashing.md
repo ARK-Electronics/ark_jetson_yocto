@@ -209,6 +209,30 @@ check NVMe mounts and the expected device tree, then run the GPU checks before
 restoring models or claiming application readiness. Flash completion does not
 establish that the OS or CUDA works.
 
+Before collecting repeated cold boots, confirm the native boot-control setup
+and verifier have actually completed successfully:
+
+```sh
+systemctl show setup-nv-boot-control.service nv_update_verifier.service \
+  -p Id -p Result -p ExecMainCode -p ExecMainStatus \
+  -p ExecMainStartTimestampMonotonic -p ExecMainExitTimestampMonotonic
+nvbootctrl dump-slots-info
+```
+
+Both units may be inactive after success. Require `Result=success`,
+`ExecMainCode=1` (normal exit), `ExecMainStatus=0`, and nonzero start/exit
+execution timestamps; zero default status while a service is still running
+is insufficient. Inspect their journal output and record the current/active
+bootloader slot after each boot. Rootfs retry counters still matter in the
+single-root configuration, and the ARK readiness markers do not wait for this
+verifier to finish.
+
+First boot also provisions SSH keys and grows the ext4 root filesystem. Confirm
+`/var/lib/ark-grow-rootfs/completed` and `df -h /` before timing later cold boots.
+The retained JAJ minimal firmware uses the built-in NVMe/APP launcher and does
+not provide a menu or usable ESP fallback on failure. Keep force-recovery access
+and the matching original BSP available for repair or rollback.
+
 ## Restore the original system
 
 For the default external-only migration, leave the preserved QSPI alone. Boot
