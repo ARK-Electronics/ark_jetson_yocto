@@ -27,6 +27,9 @@ The power reference is the host SCPI command-send time, NOT an electrical edge.
 Supply identity and protection settings/alarms are checked before output changes.
 Latched faults are never cleared. A final output/alarm check distinguishes supply
 faults from software readiness timeouts; it does not continuously monitor power.
+--carrier-interface adds read-only physical host Ethernet carrier polling every
+20 ms, requires a verified carrier-down/output-OFF baseline, and records later
+flaps. It measures host driver reporting, not an exact electrical link edge.
 """
 
 import argparse
@@ -338,12 +341,143 @@ def tcp_worker(address, timeout, interval, probe, capture, stop):
         stop.wait(interval)
 
 
+class CarrierObserver:
+    """Read one pinned physical netdev; never configure it or send packets."""
+    INTERVAL = 0.020
+
+    def __init__(self, interface, duration, sysfs_root='/sys/class/net'):
+        if not re.fullmatch(r'[A-Za-z0-9_.:-]{1,15}', interface) or interface in ('.', '..'):
+            raise ValueError('Invalid carrier interface name')
+        self.path = Path(sysfs_root) / interface
+        self.fd = self.device_fd = None
+        self.duration = duration
+        self.last_state = self.last_sample_ns = self.last_up_ns = None
+        self.baseline_ns = None
+        self.down_after_first_up = 0
+        self.sampling_reference_ns = self.last_post_reference_sample_ns = None
+        self.post_reference_sample_count = 0
+        self.max_completion_gap_ns = self.max_read_duration_ns = 0
+        try:
+            self.fd = os.open(self.path, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+            self.device_path = (self.path / 'device').resolve(strict=True)
+            if '/devices/virtual/' in str(self.path.resolve(strict=True)):
+                raise ValueError('Carrier observation requires a physical Ethernet interface')
+            self.device_fd = os.open(self.path / 'device', os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+            self.ifindex = self.integer('ifindex')
+            if self.ifindex <= 0 or self.integer('iflink') != self.ifindex or self.integer('type') != 1:
+                raise ValueError('Carrier observation requires a physical Ethernet interface')
+            self.identity = {'interface': interface, 'ifindex': self.ifindex,
+                             'sysfs_path': str(self.path.resolve(strict=True)),
+                             'device_path': str(self.device_path)}
+            self.read()  # Fail before any power change if invalid or administratively down.
+        except BaseException:
+            self.close()
+            raise
+
+    def integer(self, name, hexadecimal=False):
+        fd = os.open(name, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW, dir_fd=self.fd)
+        try:
+            raw = os.read(fd, 128).decode('ascii').strip()
+            if not re.fullmatch(r'0x[0-9a-fA-F]+' if hexadecimal else r'[0-9]+', raw):
+                raise ValueError('Invalid carrier interface ' + name)
+            return int(raw, 16 if hexadecimal else 10)
+        finally:
+            os.close(fd)
+
+    def check_identity(self):
+        for path, fd in ((self.path, self.fd), (self.path / 'device', self.device_fd)):
+            current, pinned = os.stat(path), os.fstat(fd)
+            if (current.st_dev, current.st_ino) != (pinned.st_dev, pinned.st_ino):
+                raise RuntimeError('Carrier interface or physical device was replaced')
+        if (self.path / 'device').resolve(strict=True) != self.device_path:
+            raise RuntimeError('Carrier physical device path changed')
+        if self.integer('ifindex') != self.ifindex or self.integer('iflink') != self.ifindex or self.integer('type') != 1:
+            raise RuntimeError('Carrier interface identity changed')
+        if not self.integer('flags', hexadecimal=True) & 1:  # IFF_UP, not IFF_RUNNING.
+            raise RuntimeError('Carrier interface must remain administratively UP')
+
+    def read(self):
+        started = time.monotonic_ns()
+        self.check_identity()
+        state = self.integer('carrier')
+        if state not in (0, 1):
+            raise ValueError('Invalid carrier state; expected 0 or 1')
+        self.check_identity()
+        return state, started, time.monotonic_ns()
+
+    def observe(self, capture, require_down=False):
+        # Serialize reads with the SCPI reference so a pre-power read can never
+        # be labeled post-power. The timestamp is read completion, not wire time.
+        with capture.lock:
+            state, started, now = self.read()
+            if capture.reference_ns is not None and now >= capture.reference_ns:
+                if self.sampling_reference_ns != capture.reference_ns:
+                    self.sampling_reference_ns = capture.reference_ns
+                    self.last_post_reference_sample_ns = capture.reference_ns
+                    self.post_reference_sample_count = 0
+                    self.max_completion_gap_ns = self.max_read_duration_ns = 0
+                self.post_reference_sample_count += 1
+                self.max_completion_gap_ns = max(self.max_completion_gap_ns, now - self.last_post_reference_sample_ns)
+                self.max_read_duration_ns = max(self.max_read_duration_ns, now - started)
+                self.last_post_reference_sample_ns = now
+            if require_down and state != 0:
+                raise RuntimeError('Carrier is UP while supply is OFF; no power-on was issued')
+            if state != self.last_state:
+                capture.event('carrier_transition', now, carrier=state,
+                              read_started_monotonic_ns=started,
+                              previous_observation_monotonic_ns=self.last_sample_ns)
+                if capture.reference_ns is not None:
+                    if state:
+                        self.last_up_ns = now
+                        if self.baseline_ns is None:
+                            raise RuntimeError('Carrier lacks an output-OFF baseline')
+                        if now <= capture.reference_ns + round(self.duration * 1e9):
+                            capture.mark_ready('carrier', now)
+                    elif 'carrier' in capture.ready:
+                        self.down_after_first_up += 1
+            self.last_state, self.last_sample_ns = state, now
+            if require_down:
+                self.baseline_ns = now
+                capture.event('carrier_down_baseline', now, carrier=0,
+                              administratively_up=True, supply_output_off_verified=True)
+
+    def summary(self, capture):
+        first = capture.ready.get('carrier')
+        return {**self.identity, 'poll_interval_s': self.INTERVAL,
+                'baseline_monotonic_ns': self.baseline_ns,
+                'last_sample_monotonic_ns': self.last_sample_ns,
+                'post_reference_sample_count': self.post_reference_sample_count,
+                'max_completion_gap_s': self.max_completion_gap_ns / 1e9,
+                'max_read_duration_s': self.max_read_duration_ns / 1e9,
+                'last_carrier': self.last_state, 'last_up_monotonic_ns': self.last_up_ns,
+                'down_transitions_after_first_up': self.down_after_first_up,
+                'stable_after_first_up': bool(first and self.last_state == 1 and not self.down_after_first_up)}
+
+    def close(self):
+        for name in ('fd', 'device_fd'):
+            fd = getattr(self, name, None)
+            if fd is not None:
+                os.close(fd)
+                setattr(self, name, None)
+
+
+def carrier_worker(observer, capture, stop):
+    try:
+        while not stop.is_set():
+            observer.observe(capture)
+            stop.wait(observer.INTERVAL)
+    except Exception as error:
+        capture.fail('carrier_monitor', error)
+        stop.set()
+
+
 def arguments(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--output-dir', required=True, help='New directory; refuses to overwrite an existing capture')
     parser.add_argument('--serial', help='Explicit host debug UART path; omit for no UART capture')
     parser.add_argument('--baud', type=int, default=115200)
     parser.add_argument('--uart-marker', help='UTF-8 regular expression for application readiness; requires --serial')
+    parser.add_argument('--carrier-interface', help='Read-only physical Ethernet carrier observer; requires Rigol power control and an administratively UP host interface')
     parser.add_argument('--host', help='Host for TCP readiness polling; optional')
     parser.add_argument('--port', type=int, default=22)
     parser.add_argument('--probe', choices=('tcp', 'ssh'), default='tcp',
@@ -388,8 +522,12 @@ def arguments(argv=None):
         parser.error('--rigol and an explicit --expected-serial must be supplied together')
     if bool(args.rigol) != bool(args.channel):
         parser.error('--rigol and --channel 1 must be supplied together')
-    if not args.serial and not args.host and not args.http_url:
-        parser.error('Provide --serial, --host, and/or --http-url to observe readiness or capture UART')
+    if args.carrier_interface and not args.rigol:
+        parser.error('--carrier-interface requires --rigol and --power-on or --power-cycle')
+    if args.carrier_interface and (not re.fullmatch(r'[A-Za-z0-9_.:-]{1,15}', args.carrier_interface) or args.carrier_interface in ('.', '..')):
+        parser.error('Invalid --carrier-interface name')
+    if not args.serial and not args.host and not args.http_url and not args.carrier_interface:
+        parser.error('Provide --serial, --host, --http-url, and/or --carrier-interface')
     for option in ('duration', 'tcp_timeout', 'http_timeout', 'poll_interval', 'off_seconds'):
         value = getattr(args, option)
         if not 0 < value < float('inf'):
@@ -403,7 +541,7 @@ def run(args):
     capture = Capture(args.output_dir, args.uart_marker)
     stop = threading.Event()
     workers = []
-    port = instrument = None
+    port = instrument = carrier = None
     instrument_verified = False
     power_on_attempted = False
     metadata = {'schema_version': 1, 'started_utc': dt.datetime.now(dt.timezone.utc).isoformat(),
@@ -435,6 +573,12 @@ def run(args):
             check_supply(initial)
             if args.power_on and state != 'OFF':
                 raise RuntimeError('--power-on requires CH1 already OFF; no power change was made')
+        if args.carrier_interface:
+            carrier = CarrierObserver(args.carrier_interface, args.duration)
+            metadata['carrier_timing_note'] = 'Host sysfs carrier read completion at 20 ms polling intervals; scheduling, sysfs reads, USB adapter/driver reporting and link negotiation add latency. Not an electrical link-edge timestamp or IP/application readiness; stability means no observed later down sample, and shorter flaps may be missed.'
+            worker = threading.Thread(target=carrier_worker, args=(carrier, capture, stop), daemon=True)
+            worker.start()
+            workers.append(worker)
         if args.serial:
             import serial
             port = serial.Serial(port=None, baudrate=args.baud, timeout=0.05,
@@ -473,8 +617,15 @@ def run(args):
                 raise RuntimeError('TCP endpoint responds while output is OFF; cannot attribute a cold boot to this supply')
             if stop.is_set():
                 raise RuntimeError('Capture failed before power-on')
-            power_on_attempted = True
-            instrument.send('OUTP CH1,ON', power_reference=True)
+            if carrier and instrument.query('OUTP? CH1').upper() != 'OFF':
+                raise RuntimeError('Output must report OFF before carrier baseline and power-on')
+            with capture.lock:
+                if carrier:
+                    carrier.observe(capture, require_down=True)
+                if stop.is_set():
+                    raise RuntimeError('Capture failed before power-on')
+                power_on_attempted = True
+                instrument.send('OUTP CH1,ON', power_reference=True)
             if instrument.query('OUTP? CH1').upper() != 'ON':
                 raise RuntimeError('Output did not report ON')
         else:
@@ -483,8 +634,10 @@ def run(args):
         while not stop.is_set() and time.monotonic() < deadline:
             stop.wait(min(0.1, max(0, deadline - time.monotonic())))
         network_kind = 'ssh_banner' if args.probe == 'ssh' else 'tcp'
-        wanted = [kind for kind, enabled in ((network_kind, args.host), ('http', args.http_url), ('uart', args.uart_marker)) if enabled]
+        wanted = [kind for kind, enabled in ((network_kind, args.host), ('http', args.http_url), ('uart', args.uart_marker), ('carrier', args.carrier_interface)) if enabled]
         missing = [kind for kind in wanted if kind not in capture.ready]
+        if carrier and 'carrier' in capture.ready and carrier.last_state != 1:
+            missing.append('carrier_final_up')
         metadata['missing_readiness'] = missing
         if capture.errors:
             metadata['status'] = 'error'
@@ -507,6 +660,19 @@ def run(args):
         stop.set()
         for worker in workers:
             worker.join(timeout=max(2, args.tcp_timeout + 1, args.http_timeout + 1))
+        if carrier is not None:
+            try:
+                carrier.observe(capture)
+            except Exception as error:
+                capture.fail('carrier_monitor', error)
+                if metadata['status'] not in ('supply_fault', 'interrupted'):
+                    metadata['status'] = 'error'
+            metadata['carrier_observer'] = carrier.summary(capture)
+            capture.event('carrier_monitor_finished', carrier=carrier.last_state, last_sample_monotonic_ns=carrier.last_sample_ns)
+            if metadata['status'] == 'ready' and carrier.last_state != 1:
+                metadata['status'] = 'readiness_timeout'
+                metadata.setdefault('missing_readiness', []).append('carrier_final_up')
+            carrier.close()
         if port is not None:
             port.close()
         if instrument is not None:

@@ -1,0 +1,357 @@
+{
+  "schema_version": 1,
+  "reference": "scpi_power_on_command_send",
+  "electrical_edge_measured": false,
+  "timing_note": "Elapsed times start immediately before the host SCPI power-on command write. Command/output latency and any board POR holdoff (including an approximately 2-second holdoff) remain included; no delay is subtracted.",
+  "uart_timing_note": "UART observations use the host receive timestamp of the chunk containing the completed match, not individual wire-byte timing. Reported Linux uptime is retained separately.",
+  "reboot_note": "A repeated Linux-start banner makes the run ineligible; only first-boot UART observations are retained. Reboots with no observable banner cannot be inferred.",
+  "sanitization": "Only fixed definitions, numeric measurements and allowlisted status/issue codes are retained. Input paths, identities, addresses, raw UART and private configuration are omitted.",
+  "terminal_kind": "login",
+  "terminal_pattern_source": "default",
+  "definitions": {
+    "os_ready": "First ARK_OS_READY with a complete numeric uptime_s after the selected reference; multi-user observer, not application readiness.",
+    "cuda_ready": "First ARK_CUDA_READY with a complete numeric uptime_s after the selected reference; a verified CUDA integer computation.",
+    "ssh_banner": "First valid SSH identification banner observed by the capture probe; authentication and an interactive session are not tested.",
+    "uart_terminal": "First matching UART login prompt; authentication has not been performed."
+  },
+  "run_count": 3,
+  "runs": [
+    {
+      "run_index": 1,
+      "capture_status": "ready",
+      "eligible_for_aggregate": true,
+      "issues": [],
+      "power_references_in_capture": 1,
+      "probe_poll_interval_s": 0.1,
+      "requested_capture_duration_s": 40.0,
+      "kernel_boot_banners_observed": 0,
+      "observations": {
+        "os_ready": {
+          "elapsed_s": 13.363199461,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 6.33
+        },
+        "cuda_ready": {
+          "elapsed_s": 13.53905273,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 6.52
+        },
+        "uart_terminal": {
+          "elapsed_s": 15.586877591,
+          "source": "uart_chunk_receive"
+        },
+        "ssh_banner": {
+          "elapsed_s": 15.903618017,
+          "source": "timeline_ssh_banner"
+        }
+      }
+    },
+    {
+      "run_index": 2,
+      "capture_status": "ready",
+      "eligible_for_aggregate": true,
+      "issues": [],
+      "power_references_in_capture": 1,
+      "probe_poll_interval_s": 0.1,
+      "requested_capture_duration_s": 40.0,
+      "kernel_boot_banners_observed": 0,
+      "observations": {
+        "os_ready": {
+          "elapsed_s": 13.573958476,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 6.54
+        },
+        "cuda_ready": {
+          "elapsed_s": 13.755722895,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 6.72
+        },
+        "uart_terminal": {
+          "elapsed_s": 15.782644175,
+          "source": "uart_chunk_receive"
+        },
+        "ssh_banner": {
+          "elapsed_s": 15.941763844,
+          "source": "timeline_ssh_banner"
+        }
+      }
+    },
+    {
+      "run_index": 3,
+      "capture_status": "ready",
+      "eligible_for_aggregate": true,
+      "issues": [],
+      "power_references_in_capture": 1,
+      "probe_poll_interval_s": 0.1,
+      "requested_capture_duration_s": 40.0,
+      "kernel_boot_banners_observed": 0,
+      "observations": {
+        "os_ready": {
+          "elapsed_s": 13.353392292,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 6.33
+        },
+        "cuda_ready": {
+          "elapsed_s": 13.535203344,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 6.5
+        },
+        "uart_terminal": {
+          "elapsed_s": 15.567798027,
+          "source": "uart_chunk_receive"
+        },
+        "ssh_banner": {
+          "elapsed_s": 15.918229785,
+          "source": "timeline_ssh_banner"
+        }
+      }
+    }
+  ],
+  "aggregates": {
+    "os_ready": {
+      "included_samples": [
+        {
+          "run_index": 1,
+          "elapsed_s": 13.363199461
+        },
+        {
+          "run_index": 2,
+          "elapsed_s": 13.573958476
+        },
+        {
+          "run_index": 3,
+          "elapsed_s": 13.353392292
+        }
+      ],
+      "sample_count": 3,
+      "minimum_three_samples_met": true,
+      "missing_count": 0,
+      "excluded_run_count": 0,
+      "median_s": 13.363199461,
+      "minimum_s": 13.353392292,
+      "maximum_s": 13.573958476
+    },
+    "cuda_ready": {
+      "included_samples": [
+        {
+          "run_index": 1,
+          "elapsed_s": 13.53905273
+        },
+        {
+          "run_index": 2,
+          "elapsed_s": 13.755722895
+        },
+        {
+          "run_index": 3,
+          "elapsed_s": 13.535203344
+        }
+      ],
+      "sample_count": 3,
+      "minimum_three_samples_met": true,
+      "missing_count": 0,
+      "excluded_run_count": 0,
+      "median_s": 13.53905273,
+      "minimum_s": 13.535203344,
+      "maximum_s": 13.755722895
+    },
+    "ssh_banner": {
+      "included_samples": [
+        {
+          "run_index": 1,
+          "elapsed_s": 15.903618017
+        },
+        {
+          "run_index": 2,
+          "elapsed_s": 15.941763844
+        },
+        {
+          "run_index": 3,
+          "elapsed_s": 15.918229785
+        }
+      ],
+      "sample_count": 3,
+      "minimum_three_samples_met": true,
+      "missing_count": 0,
+      "excluded_run_count": 0,
+      "median_s": 15.918229785,
+      "minimum_s": 15.903618017,
+      "maximum_s": 15.941763844
+    },
+    "uart_terminal": {
+      "included_samples": [
+        {
+          "run_index": 1,
+          "elapsed_s": 15.586877591
+        },
+        {
+          "run_index": 2,
+          "elapsed_s": 15.782644175
+        },
+        {
+          "run_index": 3,
+          "elapsed_s": 15.567798027
+        }
+      ],
+      "sample_count": 3,
+      "minimum_three_samples_met": true,
+      "missing_count": 0,
+      "excluded_run_count": 0,
+      "median_s": 15.586877591,
+      "minimum_s": 15.567798027,
+      "maximum_s": 15.782644175
+    }
+  },
+  "configuration": {
+    "platform": "ARK Just a Jetson Orin NX 16GB",
+    "os": "ARK Electronics Headless Jetson Linux 0.1 / Yocto Wrynose / L4T R39.2.1",
+    "kernel": "6.8.12-l4t-r39.2.1-1021.21",
+    "kas_configuration": "kas/jaj.yml:kas/bonsai.yml:kas/fastboot.yml:kas/no-camera.yml:local.yml",
+    "local_configuration_note": "Private local key configuration is omitted.",
+    "tegraflash_bundle_sha256": "f8f5ea39eff55149b20ea30a96842f19a32c55c57dc3561ed6b1061e15021a48",
+    "bpmp_debugfs_async": true,
+    "bpmp_debugfs_delay_ms": 0,
+    "kernel_arguments_added": [
+      "quiet",
+      "loglevel=3",
+      "jaj_fastboot.bpmp_debugfs_async=1",
+      "jaj_fastboot.bpmp_debugfs_delay_ms=0"
+    ],
+    "camera_overlay": "ark_no_csi.dtbo",
+    "camera_connected": false,
+    "pcie_ffc_endpoint_connected": false,
+    "pcie_c7_linux_enabled": true,
+    "pcie_c7_max_link_generation": 2,
+    "power_mode": "MAXN_SUPER (0)",
+    "clock_policy": "Normal native dynamic clocks; jetson_clocks not applied for cold boots.",
+    "flash_scope": "External storage only; retained the existing custom minimal R39.2.1 UEFI/QSPI from PR 109.",
+    "generated_full_uefi_qualified": false
+  },
+  "qualification": {
+    "three_distinct_boots": true,
+    "all_cuda_smokes_passed": true,
+    "cuda_runtime_version": 13020,
+    "cuda_driver_version": 13020,
+    "native_boot_verification_succeeded_every_run": true,
+    "runs": [
+      {
+        "run_index": 1,
+        "cuda_smoke_passed": true,
+        "verified_elements_per_check": 65536,
+        "native_boot_services": {
+          "setup-nv-boot-control.service": {
+            "result": "success",
+            "exit_status": 0,
+            "start_linux_uptime_s": 4.49975,
+            "exit_linux_uptime_s": 4.576982
+          },
+          "nv_update_verifier.service": {
+            "result": "success",
+            "exit_status": 0,
+            "start_linux_uptime_s": 5.924982,
+            "exit_linux_uptime_s": 5.941897
+          }
+        },
+        "bootloader_slots": {
+          "current": "A",
+          "active": "A",
+          "slot_0_status": "normal",
+          "slot_1_status": "normal",
+          "capsule_update_status": 0
+        }
+      },
+      {
+        "run_index": 2,
+        "cuda_smoke_passed": true,
+        "verified_elements_per_check": 65536,
+        "native_boot_services": {
+          "setup-nv-boot-control.service": {
+            "result": "success",
+            "exit_status": 0,
+            "start_linux_uptime_s": 4.703699,
+            "exit_linux_uptime_s": 4.780998
+          },
+          "nv_update_verifier.service": {
+            "result": "success",
+            "exit_status": 0,
+            "start_linux_uptime_s": 6.126225,
+            "exit_linux_uptime_s": 6.142559
+          }
+        },
+        "bootloader_slots": {
+          "current": "A",
+          "active": "A",
+          "slot_0_status": "normal",
+          "slot_1_status": "normal",
+          "capsule_update_status": 0
+        }
+      },
+      {
+        "run_index": 3,
+        "cuda_smoke_passed": true,
+        "verified_elements_per_check": 65536,
+        "native_boot_services": {
+          "setup-nv-boot-control.service": {
+            "result": "success",
+            "exit_status": 0,
+            "start_linux_uptime_s": 4.495601,
+            "exit_linux_uptime_s": 4.572501
+          },
+          "nv_update_verifier.service": {
+            "result": "success",
+            "exit_status": 0,
+            "start_linux_uptime_s": 5.924668,
+            "exit_linux_uptime_s": 5.9413
+          }
+        },
+        "bootloader_slots": {
+          "current": "A",
+          "active": "A",
+          "slot_0_status": "normal",
+          "slot_1_status": "normal",
+          "capsule_update_status": 0
+        }
+      }
+    ]
+  },
+  "comparison_with_yocto_base": {
+    "reference_result": "yocto-r39-base-boot.json",
+    "method": "Percentage reduction of the three-run median elapsed time from SCPI command send; not paired runs.",
+    "milestones": {
+      "os_ready": {
+        "base_median_s": 19.759213866,
+        "fast_median_s": 13.363199461,
+        "median_reduction_s": 6.396014405,
+        "median_reduction_percent": 32.369782
+      },
+      "cuda_ready": {
+        "base_median_s": 19.935031828,
+        "fast_median_s": 13.53905273,
+        "median_reduction_s": 6.395979098,
+        "median_reduction_percent": 32.084118
+      },
+      "ssh_banner": {
+        "base_median_s": 22.58595271,
+        "fast_median_s": 15.918229785,
+        "median_reduction_s": 6.667722925,
+        "median_reduction_percent": 29.521548
+      },
+      "uart_terminal": {
+        "base_median_s": 21.987633111,
+        "fast_median_s": 15.586877591,
+        "median_reduction_s": 6.40075552,
+        "median_reduction_percent": 29.110707
+      }
+    }
+  },
+  "comparison_limits": [
+    "Three accepted cold boots after provisioning; first-boot filesystem growth and setup are excluded.",
+    "These measurements qualify the combined fastboot and no-camera configuration. They do not isolate the contribution of asynchronous BPMP debugfs, quieter console output or disabled CSI camera probing.",
+    "The retained custom minimal R39.2.1 UEFI/QSPI is shared with the bench baseline. These results do not qualify the full UEFI firmware generated by this repository.",
+    "No camera or PCIe FFC endpoint was attached. C7 remains enabled at Gen2 in Linux; an attached FFC endpoint and camera-enabled operation are not qualified by these runs.",
+    "The SCPI command-send reference includes command/output latency and board POR holdoff. The electrical power edge was not measured, and no approximately 2-second holdoff was subtracted.",
+    "Quiet logging produced zero observable Linux-start banners in all three captures. Distinct qualification boot identifiers were checked privately, but the UART banner heuristic cannot exclude an unobservable intervening restart.",
+    "CUDA readiness verifies a 65,536-element integer computation. It does not establish model loading, inference-server readiness or absence of earlier CUDA use by other services.",
+    "The SSH milestone is an identification banner only. The UART milestone is a normal username prompt; neither measures successful authentication.",
+    "UART receive timestamps and the 0.1-second SSH polling interval limit timing precision; no wire-byte or electrical-edge instrumentation was used."
+  ]
+}

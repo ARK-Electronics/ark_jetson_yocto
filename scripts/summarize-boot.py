@@ -161,6 +161,84 @@ def observation(timestamp_ns, reference_ns, source, linux_uptime=None):
     return result
 
 
+def carrier_observations(metadata, all_events, reference, end):
+    """Allowlist only carrier times/states; never copy host interface identity."""
+    info = metadata.get('carrier_observer')
+    if not isinstance(info, dict):
+        raise InputError('missing_carrier_observer_metadata')
+    baseline = timestamp(info.get('baseline_monotonic_ns'))
+    prior_refs = [e['monotonic_ns'] for e in all_events if e['event'] == 'reference_started'
+                  and e['monotonic_ns'] < reference]
+    matches = [e for e in all_events if e['event'] == 'carrier_down_baseline'
+               and e['monotonic_ns'] == baseline and type(e.get('carrier')) is int
+               and e['carrier'] == 0 and e.get('administratively_up') is True
+               and e.get('supply_output_off_verified') is True]
+    if len(matches) != 1 or baseline > reference or (prior_refs and baseline <= max(prior_refs)):
+        raise InputError('invalid_carrier_down_baseline')
+    events = [e for e in all_events if e['monotonic_ns'] >= reference
+              and (end is None or e['monotonic_ns'] < end)]
+    transitions = []
+    state = 0
+    for event in events:
+        if event['event'] != 'carrier_transition':
+            continue
+        current = event.get('carrier')
+        if type(current) is not int or current not in (0, 1) or current == state:
+            raise InputError('invalid_carrier_transition')
+        state = current
+        transitions.append({'elapsed_s': (event['monotonic_ns'] - reference) / 1e9,
+                            'carrier': current})
+    ready = [e for e in events if e['event'] == 'carrier_ready']
+    readiness = metadata.get('readiness', {})
+    if not isinstance(readiness, dict):
+        raise InputError('carrier_readiness_metadata_mismatch')
+    metadata_ready = readiness.get('carrier')
+    first = None
+    if ready or metadata_ready is not None:
+        if len(ready) != 1 or not isinstance(metadata_ready, dict):
+            raise InputError('carrier_readiness_metadata_mismatch')
+        when = ready[0]['monotonic_ns']
+        if timestamp(metadata_ready.get('monotonic_ns')) != when:
+            raise InputError('carrier_readiness_metadata_mismatch')
+        first_up = next((e['monotonic_ns'] for e in events
+                         if e['event'] == 'carrier_transition' and e.get('carrier') == 1), None)
+        if first_up != when:
+            raise InputError('carrier_readiness_transition_mismatch')
+        first = observation(when, reference, 'host_sysfs_carrier_read')
+    last_sample = timestamp(info.get('last_sample_monotonic_ns'))
+    if last_sample < reference or (end is not None and last_sample >= end):
+        raise InputError('carrier_final_sample_outside_reference_window')
+    if type(info.get('last_carrier')) is not int or info['last_carrier'] != state:
+        raise InputError('carrier_final_state_mismatch')
+    finished = [e for e in events if e['event'] == 'carrier_monitor_finished']
+    if len(finished) != 1 or type(finished[0].get('carrier')) is not int or finished[0].get('carrier') != state or finished[0].get('last_sample_monotonic_ns') != last_sample:
+        raise InputError('carrier_final_state_mismatch')
+    if any(e['monotonic_ns'] > last_sample for e in events if e['event'] == 'carrier_transition'):
+        raise InputError('carrier_final_state_mismatch')
+    interval = optional_number(info.get('poll_interval_s'), positive=True)
+    if interval != 0.020:
+        raise InputError('unexpected_carrier_poll_interval')
+    count = info.get('post_reference_sample_count')
+    gap = optional_number(info.get('max_completion_gap_s'))
+    read_duration = optional_number(info.get('max_read_duration_s'))
+    span = (last_sample - reference) / 1e9
+    if type(count) is not int or count < max(1, len(transitions)) or gap is None or read_duration is None:
+        raise InputError('invalid_carrier_sampling_statistics')
+    if gap > span or gap * count + 1e-9 < span or read_duration > gap + 1e-9:
+        raise InputError('invalid_carrier_sampling_statistics')
+    ups = [item['elapsed_s'] for item in transitions if item['carrier'] == 1]
+    drops = sum(item['carrier'] == 0 and item['elapsed_s'] >= first['elapsed_s']
+                for item in transitions) if first is not None else 0
+    return first, {'down_baseline_verified': True, 'poll_interval_s': interval,
+                   'post_reference_sample_count': count, 'max_completion_gap_s': gap,
+                   'max_read_duration_s': read_duration,
+                   'transitions': transitions, 'final_observed_carrier': state,
+                   'final_observation_elapsed_s': (last_sample - reference) / 1e9,
+                   'last_up_elapsed_s': ups[-1] if ups else None,
+                   'down_transitions_after_first_up': drops,
+                   'stable_after_first_up': bool(first is not None and state == 1 and drops == 0)}
+
+
 def summarize_run(directory, index, terminal_pattern=None):
     result = {'run_index': index, 'capture_status': 'unavailable', 'eligible_for_aggregate': False,
               'issues': [], 'observations': {'os_ready': None, 'cuda_ready': None,
@@ -230,6 +308,12 @@ def summarize_run(directory, index, terminal_pattern=None):
                 result['observations']['ssh_banner'] = observation(candidate, reference, 'timeline_ssh_banner')
         elif metadata_time is not None and network_kind == 'ssh_banner':
             result['observations']['ssh_banner'] = observation(metadata_time, reference, 'metadata_ssh_banner')
+        carrier_requested = isinstance(config, dict) and bool(config.get('carrier_interface'))
+        if carrier_requested or 'carrier_observer' in metadata:
+            result['observations']['carrier'] = None
+            first, details = carrier_observations(metadata, all_events, reference, end)
+            result['observations']['carrier'] = first
+            result['carrier'] = details
         result['eligible_for_aggregate'] = not result['issues']
     except InputError as error:
         result['issues'].append(str(error))
@@ -238,17 +322,19 @@ def summarize_run(directory, index, terminal_pattern=None):
 
 def aggregate(runs, terminal_kind):
     metrics = ['os_ready', 'cuda_ready', 'ssh_banner']
+    if any('carrier' in run['observations'] for run in runs):
+        metrics.append('carrier')
     if terminal_kind != 'none':
         metrics.append('uart_terminal')
     result = {}
     for metric in metrics:
         included = [{'run_index': run['run_index'], 'elapsed_s': run['observations'][metric]['elapsed_s']}
-                    for run in runs if run['eligible_for_aggregate'] and run['observations'][metric] is not None]
+                    for run in runs if run['eligible_for_aggregate'] and run['observations'].get(metric) is not None]
         samples = [item['elapsed_s'] for item in included]
         result[metric] = {
             'included_samples': included, 'sample_count': len(samples),
             'minimum_three_samples_met': len(samples) >= 3,
-            'missing_count': sum(run['eligible_for_aggregate'] and run['observations'][metric] is None for run in runs),
+            'missing_count': sum(run['eligible_for_aggregate'] and run['observations'].get(metric) is None for run in runs),
             'excluded_run_count': sum(not run['eligible_for_aggregate'] for run in runs),
             'median_s': statistics.median(samples) if samples else None,
             'minimum_s': min(samples) if samples else None,
@@ -274,6 +360,8 @@ def make_report(directories, terminal_kind='none', terminal_regex=None):
                           'First matching UART login prompt; authentication has not been performed.' if terminal_kind == 'login' else
                           'First UART match of the caller-supplied shell-prompt expression; no command execution is tested.'),
     }
+    if any('carrier' in run['observations'] for run in runs):
+        definitions['carrier'] = 'First host sysfs carrier=1 after a verified output-OFF/carrier-down baseline, with the physical host interface administratively UP. 20 ms polling plus scheduling, USB adapter/driver and read latency apply. This is not an electrical link edge, IP readiness, or completion of unspecified POST checks; later flaps and final state are reported separately. Stability means no observed later down sample; shorter flaps may be missed.'
     return {
         'schema_version': 1, 'reference': REFERENCE, 'electrical_edge_measured': False,
         'timing_note': 'Elapsed times start immediately before the host SCPI power-on command write. Command/output latency and any board POR holdoff (including an approximately 2-second holdoff) remain included; no delay is subtracted.',

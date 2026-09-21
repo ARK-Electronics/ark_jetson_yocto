@@ -1,0 +1,500 @@
+{
+  "schema_version": 1,
+  "reference": "scpi_power_on_command_send",
+  "electrical_edge_measured": false,
+  "timing_note": "Elapsed times start immediately before the host SCPI power-on command write. Command/output latency and any board POR holdoff (including an approximately 2-second holdoff) remain included; no delay is subtracted.",
+  "uart_timing_note": "UART observations use the host receive timestamp of the chunk containing the completed match, not individual wire-byte timing. Reported Linux uptime is retained separately.",
+  "reboot_note": "A repeated Linux-start banner makes the run ineligible; only first-boot UART observations are retained. Reboots with no observable banner cannot be inferred.",
+  "sanitization": "Only fixed definitions, numeric measurements and allowlisted status/issue codes are retained. Input paths, identities, addresses, raw UART and private configuration are omitted.",
+  "terminal_kind": "login",
+  "terminal_pattern_source": "default",
+  "definitions": {
+    "os_ready": "First ARK_OS_READY with a complete numeric uptime_s after the selected reference; multi-user observer, not application readiness.",
+    "cuda_ready": "First ARK_CUDA_READY with a complete numeric uptime_s after the selected reference; a verified CUDA integer computation.",
+    "ssh_banner": "First valid SSH identification banner observed by the capture probe; authentication and an interactive session are not tested.",
+    "uart_terminal": "First matching UART login prompt; authentication has not been performed.",
+    "carrier": "First host sysfs carrier=1 after a verified output-OFF/carrier-down baseline, with the physical host interface administratively UP. 20 ms polling plus scheduling, USB adapter/driver and read latency apply. This is not an electrical link edge, IP readiness, or completion of unspecified POST checks; later flaps and final state are reported separately. Stability means no observed later down sample; shorter flaps may be missed."
+  },
+  "run_count": 3,
+  "runs": [
+    {
+      "run_index": 1,
+      "capture_status": "ready",
+      "eligible_for_aggregate": true,
+      "issues": [],
+      "observations": {
+        "os_ready": {
+          "elapsed_s": 13.410706278,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 6.36
+        },
+        "cuda_ready": {
+          "elapsed_s": 13.592602748,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 6.53
+        },
+        "uart_terminal": {
+          "elapsed_s": 15.626223744,
+          "source": "uart_chunk_receive"
+        },
+        "ssh_banner": {
+          "elapsed_s": 16.289867124,
+          "source": "timeline_ssh_banner"
+        },
+        "carrier": {
+          "elapsed_s": 5.711962584,
+          "source": "host_sysfs_carrier_read"
+        }
+      },
+      "power_references_in_capture": 1,
+      "probe_poll_interval_s": 0.1,
+      "requested_capture_duration_s": 40.0,
+      "kernel_boot_banners_observed": 0,
+      "carrier": {
+        "down_baseline_verified": true,
+        "poll_interval_s": 0.02,
+        "post_reference_sample_count": 1965,
+        "max_completion_gap_s": 0.020818969,
+        "max_read_duration_s": 0.000690245,
+        "transitions": [
+          {
+            "elapsed_s": 5.711962584,
+            "carrier": 1
+          },
+          {
+            "elapsed_s": 13.912504646,
+            "carrier": 0
+          },
+          {
+            "elapsed_s": 16.719196153,
+            "carrier": 1
+          }
+        ],
+        "final_observed_carrier": 1,
+        "final_observation_elapsed_s": 40.002582627,
+        "last_up_elapsed_s": 16.719196153,
+        "down_transitions_after_first_up": 1,
+        "stable_after_first_up": false
+      }
+    },
+    {
+      "run_index": 2,
+      "capture_status": "ready",
+      "eligible_for_aggregate": true,
+      "issues": [],
+      "observations": {
+        "os_ready": {
+          "elapsed_s": 13.484784986,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 6.43
+        },
+        "cuda_ready": {
+          "elapsed_s": 13.669713296,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 6.61
+        },
+        "uart_terminal": {
+          "elapsed_s": 15.705317831,
+          "source": "uart_chunk_receive"
+        },
+        "ssh_banner": {
+          "elapsed_s": 16.262029195,
+          "source": "timeline_ssh_banner"
+        },
+        "carrier": {
+          "elapsed_s": 5.587104788,
+          "source": "host_sysfs_carrier_read"
+        }
+      },
+      "power_references_in_capture": 1,
+      "probe_poll_interval_s": 0.1,
+      "requested_capture_duration_s": 40.0,
+      "kernel_boot_banners_observed": 0,
+      "carrier": {
+        "down_baseline_verified": true,
+        "poll_interval_s": 0.02,
+        "post_reference_sample_count": 1966,
+        "max_completion_gap_s": 0.039960766,
+        "max_read_duration_s": 0.000470545,
+        "transitions": [
+          {
+            "elapsed_s": 5.587104788,
+            "carrier": 1
+          },
+          {
+            "elapsed_s": 13.785725547,
+            "carrier": 0
+          },
+          {
+            "elapsed_s": 16.345468525,
+            "carrier": 1
+          }
+        ],
+        "final_observed_carrier": 1,
+        "final_observation_elapsed_s": 40.031994852,
+        "last_up_elapsed_s": 16.345468525,
+        "down_transitions_after_first_up": 1,
+        "stable_after_first_up": false
+      }
+    },
+    {
+      "run_index": 3,
+      "capture_status": "ready",
+      "eligible_for_aggregate": true,
+      "issues": [],
+      "observations": {
+        "os_ready": {
+          "elapsed_s": 13.372920541,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 6.3
+        },
+        "cuda_ready": {
+          "elapsed_s": 13.560972644,
+          "source": "uart_chunk_receive",
+          "reported_linux_uptime_s": 6.47
+        },
+        "uart_terminal": {
+          "elapsed_s": 15.602458158,
+          "source": "uart_chunk_receive"
+        },
+        "ssh_banner": {
+          "elapsed_s": 15.893312637,
+          "source": "timeline_ssh_banner"
+        },
+        "carrier": {
+          "elapsed_s": 5.402598888,
+          "source": "host_sysfs_carrier_read"
+        }
+      },
+      "power_references_in_capture": 1,
+      "probe_poll_interval_s": 0.1,
+      "requested_capture_duration_s": 40.0,
+      "kernel_boot_banners_observed": 0,
+      "carrier": {
+        "down_baseline_verified": true,
+        "poll_interval_s": 0.02,
+        "post_reference_sample_count": 1964,
+        "max_completion_gap_s": 0.042977687,
+        "max_read_duration_s": 0.000512347,
+        "transitions": [
+          {
+            "elapsed_s": 5.402598888,
+            "carrier": 1
+          },
+          {
+            "elapsed_s": 13.866661712,
+            "carrier": 0
+          },
+          {
+            "elapsed_s": 16.677995793,
+            "carrier": 1
+          }
+        ],
+        "final_observed_carrier": 1,
+        "final_observation_elapsed_s": 40.038748377,
+        "last_up_elapsed_s": 16.677995793,
+        "down_transitions_after_first_up": 1,
+        "stable_after_first_up": false
+      }
+    }
+  ],
+  "aggregates": {
+    "os_ready": {
+      "included_samples": [
+        {
+          "run_index": 1,
+          "elapsed_s": 13.410706278
+        },
+        {
+          "run_index": 2,
+          "elapsed_s": 13.484784986
+        },
+        {
+          "run_index": 3,
+          "elapsed_s": 13.372920541
+        }
+      ],
+      "sample_count": 3,
+      "minimum_three_samples_met": true,
+      "missing_count": 0,
+      "excluded_run_count": 0,
+      "median_s": 13.410706278,
+      "minimum_s": 13.372920541,
+      "maximum_s": 13.484784986
+    },
+    "cuda_ready": {
+      "included_samples": [
+        {
+          "run_index": 1,
+          "elapsed_s": 13.592602748
+        },
+        {
+          "run_index": 2,
+          "elapsed_s": 13.669713296
+        },
+        {
+          "run_index": 3,
+          "elapsed_s": 13.560972644
+        }
+      ],
+      "sample_count": 3,
+      "minimum_three_samples_met": true,
+      "missing_count": 0,
+      "excluded_run_count": 0,
+      "median_s": 13.592602748,
+      "minimum_s": 13.560972644,
+      "maximum_s": 13.669713296
+    },
+    "ssh_banner": {
+      "included_samples": [
+        {
+          "run_index": 1,
+          "elapsed_s": 16.289867124
+        },
+        {
+          "run_index": 2,
+          "elapsed_s": 16.262029195
+        },
+        {
+          "run_index": 3,
+          "elapsed_s": 15.893312637
+        }
+      ],
+      "sample_count": 3,
+      "minimum_three_samples_met": true,
+      "missing_count": 0,
+      "excluded_run_count": 0,
+      "median_s": 16.262029195,
+      "minimum_s": 15.893312637,
+      "maximum_s": 16.289867124
+    },
+    "carrier": {
+      "included_samples": [
+        {
+          "run_index": 1,
+          "elapsed_s": 5.711962584
+        },
+        {
+          "run_index": 2,
+          "elapsed_s": 5.587104788
+        },
+        {
+          "run_index": 3,
+          "elapsed_s": 5.402598888
+        }
+      ],
+      "sample_count": 3,
+      "minimum_three_samples_met": true,
+      "missing_count": 0,
+      "excluded_run_count": 0,
+      "median_s": 5.587104788,
+      "minimum_s": 5.402598888,
+      "maximum_s": 5.711962584
+    },
+    "uart_terminal": {
+      "included_samples": [
+        {
+          "run_index": 1,
+          "elapsed_s": 15.626223744
+        },
+        {
+          "run_index": 2,
+          "elapsed_s": 15.705317831
+        },
+        {
+          "run_index": 3,
+          "elapsed_s": 15.602458158
+        }
+      ],
+      "sample_count": 3,
+      "minimum_three_samples_met": true,
+      "missing_count": 0,
+      "excluded_run_count": 0,
+      "median_s": 15.626223744,
+      "minimum_s": 15.602458158,
+      "maximum_s": 15.705317831
+    }
+  },
+  "configuration": {
+    "platform": "ARK Just a Jetson Orin NX 16GB",
+    "os": "ARK Electronics Headless Jetson Linux 0.1 / Yocto Wrynose / L4T R39.2.1",
+    "kernel": "6.8.12-l4t-r39.2.1-1021.21",
+    "kas_configuration": "kas/jaj.yml:kas/bonsai.yml:kas/fastboot.yml:kas/no-camera.yml:local.yml",
+    "local_configuration_note": "Private local key configuration is omitted.",
+    "tegraflash_bundle_sha256": "f8f5ea39eff55149b20ea30a96842f19a32c55c57dc3561ed6b1061e15021a48",
+    "bpmp_debugfs_async": true,
+    "bpmp_debugfs_delay_ms": 0,
+    "kernel_arguments_added": [
+      "quiet",
+      "loglevel=3",
+      "jaj_fastboot.bpmp_debugfs_async=1",
+      "jaj_fastboot.bpmp_debugfs_delay_ms=0"
+    ],
+    "camera_overlay": "ark_no_csi.dtbo",
+    "camera_connected": false,
+    "pcie_ffc_endpoint_connected": false,
+    "pcie_c7_linux_enabled": true,
+    "pcie_c7_max_link_generation": 2,
+    "power_mode": "MAXN_SUPER (0)",
+    "clock_policy": "Normal native dynamic clocks; jetson_clocks not applied for cold boots.",
+    "flash_scope": "External storage only; retained the existing custom minimal R39.2.1 UEFI/QSPI from PR 109.",
+    "generated_full_uefi_qualified": false,
+    "firmware_changed_for_ethernet_experiment": false,
+    "image_changed_for_ethernet_experiment": false,
+    "ethernet_peer": {
+      "connection": "Direct Ethernet cable to PC USB Ethernet adapter",
+      "adapter": "ASIX AX88179B",
+      "usb_product": "0b95:1790",
+      "host_profile": "Existing manual profile retained; DHCP and IPv6 disabled.",
+      "ssh_control": "Separate USB gadget connection."
+    },
+    "connection_validation": "One experimental JAJ-origin unicast frame received by the peer adapter before timed runs.",
+    "final_link_qualification": {
+      "carrier": 1,
+      "speed_mbps": 1000,
+      "duplex": "full",
+      "scope": "Final target-state verification after the three runs; not a timestamped negotiation result for each first-up event."
+    }
+  },
+  "qualification": {
+    "three_distinct_boots": true,
+    "all_cuda_smokes_passed": true,
+    "cuda_runtime_version": 13020,
+    "cuda_driver_version": 13020,
+    "native_boot_verification_succeeded_every_run": true,
+    "runs": [
+      {
+        "run_index": 1,
+        "cuda_smoke_passed": true,
+        "verified_elements_per_check": 65536,
+        "native_boot_services": {
+          "setup-nv-boot-control.service": {
+            "result": "success",
+            "exit_status": 0,
+            "start_linux_uptime_s": 4.574829,
+            "exit_linux_uptime_s": 4.652354
+          },
+          "nv_update_verifier.service": {
+            "result": "success",
+            "exit_status": 0,
+            "start_linux_uptime_s": 5.977438,
+            "exit_linux_uptime_s": 5.99426
+          }
+        },
+        "bootloader_slots": {
+          "current": "A",
+          "active": "A",
+          "slot_0_status": "normal",
+          "slot_1_status": "normal",
+          "capsule_update_status": 0
+        }
+      },
+      {
+        "run_index": 2,
+        "cuda_smoke_passed": true,
+        "verified_elements_per_check": 65536,
+        "native_boot_services": {
+          "setup-nv-boot-control.service": {
+            "result": "success",
+            "exit_status": 0,
+            "start_linux_uptime_s": 4.583513,
+            "exit_linux_uptime_s": 4.659348
+          },
+          "nv_update_verifier.service": {
+            "result": "success",
+            "exit_status": 0,
+            "start_linux_uptime_s": 6.037376,
+            "exit_linux_uptime_s": 6.054605
+          }
+        },
+        "bootloader_slots": {
+          "current": "A",
+          "active": "A",
+          "slot_0_status": "normal",
+          "slot_1_status": "normal",
+          "capsule_update_status": 0
+        }
+      },
+      {
+        "run_index": 3,
+        "cuda_smoke_passed": true,
+        "verified_elements_per_check": 65536,
+        "native_boot_services": {
+          "setup-nv-boot-control.service": {
+            "result": "success",
+            "exit_status": 0,
+            "start_linux_uptime_s": 4.479742,
+            "exit_linux_uptime_s": 4.552883
+          },
+          "nv_update_verifier.service": {
+            "result": "success",
+            "exit_status": 0,
+            "start_linux_uptime_s": 5.859247,
+            "exit_linux_uptime_s": 5.87609
+          }
+        },
+        "bootloader_slots": {
+          "current": "A",
+          "active": "A",
+          "slot_0_status": "normal",
+          "slot_1_status": "normal",
+          "capsule_update_status": 0
+        }
+      }
+    ]
+  },
+  "ethernet_outcome": {
+    "requirement": "Less than 6 seconds from power applied to established physical Ethernet cable link that remains established through Linux startup, including POR.",
+    "post_checks_defined": false,
+    "acceptance_requires_continuous_link": true,
+    "power_edge_to_physical_link_compliance_established": false,
+    "first_observed_carrier_under_six_seconds_every_run": true,
+    "continuous_carrier_after_first_up_every_run": false,
+    "each_run_has_observed_down_then_up": true,
+    "final_observed_carrier_up_every_run": true,
+    "last_observed_up": {
+      "sample_count": 3,
+      "median_s": 16.677995793,
+      "minimum_s": 16.345468525,
+      "maximum_s": 16.719196153
+    },
+    "observed_outage_duration": {
+      "sample_count": 3,
+      "median_s": 2.806691507,
+      "minimum_s": 2.559742978,
+      "maximum_s": 2.811334081
+    },
+    "runs": [
+      {
+        "run_index": 1,
+        "first_observed_up_under_six_seconds": true,
+        "observed_outage_duration_s": 2.806691507,
+        "no_observed_down_after_last_up": true
+      },
+      {
+        "run_index": 2,
+        "first_observed_up_under_six_seconds": true,
+        "observed_outage_duration_s": 2.559742978,
+        "no_observed_down_after_last_up": true
+      },
+      {
+        "run_index": 3,
+        "first_observed_up_under_six_seconds": true,
+        "observed_outage_duration_s": 2.811334081,
+        "no_observed_down_after_last_up": true
+      }
+    ],
+    "current_profile_meets_requirement": false
+  },
+  "measurement_limits": [
+    "Three accepted cold boots after provisioning using the same combined fastboot/no-camera image and retained custom minimal R39.2.1 UEFI/QSPI. No image or firmware changes were made for this Ethernet experiment; generated full UEFI is not qualified.",
+    "Initial peer carrier was observed below 6 seconds from SCPI command send in every run, then dropped once and recovered in every run. Continuous link is required, so the current profile does not meet the requirement. POST checks remain unspecified.",
+    "The electrical input-power edge and physical link edge were not measured. SCPI command/output latency, approximately 2-second board POR holdoff, peer PHY/driver reporting, USB delivery and host scheduling/read latency remain included. No POR estimate was subtracted.",
+    "The requested carrier polling interval is 20 ms. Per-run sample counts, maximum completion gaps from the reference through the final read, maximum read durations, every observed transition and final sample time are retained. These gaps do not bound PHY/driver reporting latency; short down/up transitions between samples can be missed.",
+    "Final link qualification reports 1000 Mb/s full duplex after the three runs; speed and duplex at each first carrier sample were not measured. Carrier is not IP readiness, successful authentication, application readiness or completion of POST.",
+    "C7 remains enabled at Gen2 in Linux; no PCIe FFC endpoint or camera was attached. Attached-endpoint and camera-enabled operation require separate qualification.",
+    "Quiet logging produced no observable Linux-start banners. Distinct qualification boot identifiers were checked privately, but the UART banner heuristic cannot exclude an unobservable intervening restart.",
+    "CUDA readiness verifies a 65,536-element integer computation, not model loading or inference-server readiness. SSH is a banner-only observation on the separate USB gadget; UART is a normal login prompt without authentication.",
+    "Reported Linux uptime and host UART chunk-receive times use different clocks. Their subtraction supplies an approximate diagnostic alignment affected by uptime rounding and marker/UART delivery, not a calibrated clock conversion or causal proof."
+  ]
+}

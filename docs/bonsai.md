@@ -1,9 +1,10 @@
 # Optional Bonsai 2 runtime
 
 The `prism-llama` recipe packages the same PrismML source revision used for the
-2026-09-18 Ubuntu benchmark on Just a Jetson / Orin NX 16GB. Yocto compilation,
-GPU inference and comparative measurements are pending. The package is optional;
-the base image does not start a model server or download model weights.
+2026-09-18 Ubuntu benchmark on Just a Jetson / Orin NX 16GB. The Yocto package
+built successfully and passed native inference plus all seven HTTP/text/vision
+checks on the bench. The package is optional; the image does not start a model
+server or download model weights.
 
 ## Build and provision
 
@@ -126,23 +127,48 @@ Report client first-visible-output latency separately from server prompt/decode
 timings. Model-loading time, Linux boot readiness and complete application
 readiness are separate measurements.
 
-## Existing Ubuntu comparison
+## Measured comparison
 
-These are historical observations from the private 2026-09-18 JAJ record:
-Ubuntu 24.04, R39.2.1, custom Linux 6.8.12, native CUDA 13.2 and the pinned
-runtime/model above. They are **not Yocto results**. Native values are means
-over three repetitions; HTTP values are medians over three text requests.
+Ubuntu values are the historical 2026-09-18 JAJ measurements: Ubuntu 24.04,
+R39.2.1, custom Linux 6.8.12 and native CUDA 13.2. Yocto values were measured
+on 2026-09-21 using the combined Bonsai, fastboot and no-camera image with the
+same retained firmware and pinned runtime/model. Native values are means over
+three repetitions; HTTP text values are medians over three repeated requests.
 
-| PQ2_0 measurement | Ubuntu 40 W | Ubuntu MAXN_SUPER | Yocto |
+| PQ2_0 measurement | Ubuntu 40 W | Ubuntu MAXN_SUPER | Yocto MAXN_SUPER |
 | --- | ---: | ---: | --- |
-| Native prompt, 512 tokens (tokens/s) | 117.294748 | 117.611236 | Pending |
-| Native generation, 128 tokens (tokens/s) | 7.296625 | 7.288507 | Pending |
-| HTTP first visible output (s) | 1.527969 | 1.503 | Pending |
-| Server text decode (tokens/s) | 7.215732 | 7.216243 | Pending |
-| Functional checks | 7/7 | 7/7 | Pending |
+| Native prompt, 512 tokens (tokens/s) | 117.294748 | 117.611236 | 117.815169 |
+| Native generation, 128 tokens (tokens/s) | 7.296625 | 7.288507 | 7.261271 |
+| HTTP first visible output (s) | 1.527969 | 1.503 | 1.517 |
+| Server text decode (tokens/s) | 7.215732 | 7.216243 | 7.180810 |
+| Functional checks | 7/7 | 7/7 | 7/7 |
 
-The final Ubuntu MAXN_SUPER run observed 1.173 GHz GPU and 3.199 GHz EMC with
-dynamic scaling. These short runs do not establish a difference between power
-modes, sustained thermal behavior or application coexistence under load. Record
-actual Yocto build/runtime versions and raw evidence before filling the pending
-column or claiming an operating-system performance difference.
+The Yocto native prompt rate differs from Ubuntu MAXN_SUPER by +0.17%,
+generation by -0.37%, and first-visible latency by +0.97%. These short runs do
+not establish an operating-system effect, a power-mode advantage, sustained
+thermal behavior or performance alongside another application. Yocto uses GCC
+15.3.0 versus Ubuntu's GCC 13.3.0; this is a comparison of complete builds.
+
+[Sanitized Yocto results](results/yocto-r39-bonsai.json) include the independent
+request/output checks and telemetry. The Yocto HTTP text completion median was
+11.266 s. The single synthetic-image check took 5.739 s to first visible output
+and 10.208 s to complete; no physical camera was connected.
+
+Both MAXN_SUPER comparisons used normal dynamic clocks. Yocto observed GPU
+frequencies up to 1.173 GHz, EMC at 3.199 GHz and CPU policies up to 1.984 GHz,
+with native fan control active. The HTTP run's peak total system RAM was
+11,607 MiB (11.33 GiB); its after-client snapshot retained about 3.72 GiB
+MemAvailable while the server was still loaded. Yocto reported no active swap;
+Ubuntu reported about 2 GiB. Peak total RAM is not a per-model allocation measurement.
+
+The Yocto build enables CUDA graphs. A separate untimed verbose diagnostic
+confirmed 65/65 model layers offloaded, flash attention enabled and CUDA graph
+warmup activity; the graph-disable environment variable was absent. That tiny
+diagnostic's timings are excluded. Individual graph replays in the timed HTTP
+requests were not profiled. These settings are distinct from `jetson_clocks`,
+which was used only for the CPU/CUDA microbenchmarks and restored before Bonsai.
+
+A nonfatal CUDA compute-buffer size warning appeared during server shutdown.
+Both benchmark commands exited successfully and all seven checks passed; the
+warning is retained without assigning an unverified cause. Model loading and boot
+readiness are separate from these steady-state inference measurements.

@@ -72,3 +72,12 @@ Hardware validation remains separate: verify the runtime mux status is disabled,
 the two IMX219 probe attempts disappear, and CUDA, NVMe and required PCIe devices
 still work. Record this variant separately from the camera-enabled baseline;
 no boot-time saving is promised.
+
+## Bench result
+
+The combined optimized image was flashed and tested on the camera-less JAJ.
+The runtime camera mux was disabled, absent IMX219 probes disappeared, and
+CUDA, NVMe boot and native boot verification passed. The Linux FFC controller
+remained enabled; no FFC endpoint or physical camera was available to test.
+[Boot measurements](validation.md) cover the combined configuration and do not
+assign an isolated timing saving to this overlay.

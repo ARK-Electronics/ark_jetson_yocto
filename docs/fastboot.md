@@ -47,6 +47,20 @@ board before attributing any timing change to this option. No boot-time saving
 is promised. Compare cold boots using the same readiness criteria and confirm
 CUDA and attached peripherals work in both images.
 
+## Bench qualification
+
+The combined Bonsai/fastboot/no-camera image completed three cold boots on the
+JAJ with Orin NX 16GB. With `delay_ms=0`, median verified CUDA readiness was
+13.539 seconds from the supply command, compared with 19.935 seconds for the
+base image. This measures the combined configuration; it does not isolate the
+BPMP patch from quiet logging or the camera overlay. The diagnostic trace
+confirmed asynchronous BPMP completion. Native boot verification, CUDA,
+MAXN_SUPER clocks and Bonsai inference passed. See [the full results](validation.md)
+for sample ranges, retained-firmware scope and limitations.
+
+This is separate from the [early Ethernet requirement](early-ethernet.md).
+A faster CUDA result does not establish when the physical cable link appears.
+
 ## Yocto initramfs and the FFC PCIe port
 
 OE4T's `tegra-minimal-initramfs` uses
