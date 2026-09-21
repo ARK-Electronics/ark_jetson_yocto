@@ -1,0 +1,109 @@
+{
+  "platform": "ARK Just a Jetson Orin NX 16GB",
+  "os": "Ubuntu 24.04 / L4T R39.2.1",
+  "kernel": "6.8.12-1021-tegra",
+  "power_mode": "MAXN_SUPER (0)",
+  "clock_policy": "jetson_clocks",
+  "cuda": "13.2",
+  "compiler": "GCC 13.3.0 / nvcc 13.2.86",
+  "measurements": [
+    {
+      "schema_version": 1,
+      "benchmark": "openssl_sha256_fixed_data_v1",
+      "passed": true,
+      "threads": 1,
+      "backend": "OpenSSL 3.0.13 30 Jan 2024",
+      "mib_per_repeat": 256,
+      "bytes_per_repeat": 268435456,
+      "block_bytes": 1048576,
+      "expected_sha256": "486cc817b95d853d3c357ff283b204c0144bd255e73fe2deb1389493b257e3c0",
+      "initialization_and_known_answer_ms": 1.419883,
+      "warmup_ms": 212.536853,
+      "samples": [
+        {
+          "wall_ms": 212.513907,
+          "mib_per_second": 1204.627046
+        },
+        {
+          "wall_ms": 212.517937,
+          "mib_per_second": 1204.604202
+        },
+        {
+          "wall_ms": 212.449488,
+          "mib_per_second": 1204.992313
+        }
+      ],
+      "total_wall_ms": 852.161162
+    },
+    {
+      "schema_version": 1,
+      "benchmark": "cuda_vector_add_u32_v1",
+      "passed": true,
+      "smoke": true,
+      "device": {
+        "index": 0,
+        "name": "Orin",
+        "compute_major": 8,
+        "compute_minor": 7,
+        "total_memory_bytes": 16324685824
+      },
+      "cuda_runtime_version": 13020,
+      "cuda_driver_version": 13020,
+      "elements": 65536,
+      "verified_elements_per_check": 65536,
+      "initialization_ms": 144.692881,
+      "device_allocation_ms": 0.528752,
+      "input_copy_wall_ms": 0.690421,
+      "first_kernel_event_ms": 0.6676160097,
+      "first_kernel_wall_ms": 0.815768,
+      "first_output_copy_wall_ms": 0.165253,
+      "warmup_ms": 0,
+      "iterations_per_sample": 0,
+      "samples": [],
+      "total_wall_ms_before_cleanup": 147.474566
+    },
+    {
+      "schema_version": 1,
+      "benchmark": "cuda_vector_add_u32_v1",
+      "passed": true,
+      "smoke": false,
+      "device": {
+        "index": 0,
+        "name": "Orin",
+        "compute_major": 8,
+        "compute_minor": 7,
+        "total_memory_bytes": 16324685824
+      },
+      "cuda_runtime_version": 13020,
+      "cuda_driver_version": 13020,
+      "elements": 4194304,
+      "verified_elements_per_check": 4194304,
+      "initialization_ms": 59.585831,
+      "device_allocation_ms": 7.770827,
+      "input_copy_wall_ms": 4.817617,
+      "first_kernel_event_ms": 1.278815985,
+      "first_kernel_wall_ms": 1.302407,
+      "first_output_copy_wall_ms": 2.945241,
+      "warmup_ms": 3.215073,
+      "iterations_per_sample": 200,
+      "samples": [
+        {
+          "event_ms": 105.2861786,
+          "mean_kernel_ms": 0.5264309049,
+          "logical_effective_gb_per_second": 95.60922179
+        },
+        {
+          "event_ms": 105.2452164,
+          "mean_kernel_ms": 0.5262261033,
+          "logical_effective_gb_per_second": 95.64643361
+        },
+        {
+          "event_ms": 105.2532196,
+          "mean_kernel_ms": 0.526266098,
+          "logical_effective_gb_per_second": 95.63916085
+        }
+      ],
+      "total_wall_ms_before_cleanup": 419.370997
+    }
+  ]
+}
