@@ -188,6 +188,72 @@ validate the exact chip revision and state, and demonstrate functional traffic
 and normal recovery. No such change was implemented or qualified here. Source:
 [`r8168_n.c`](https://gitlab.com/nvidia/nv-tegra/linux-nv-oot/-/blob/e71bacb7c611f880c5f341263967f13de54de3a9/drivers/net/ethernet/realtek/r8168/r8168_n.c).
 
+A subsequent **single instrumented cold boot** localized the driver sequence;
+its [numeric diagnostic record](results/yocto-r39-ethernet-diagnostic.json) is
+separate from the three-run stock-driver result. The
+[diagnostic source](../experiments/r8168-phy-diagnostic/) adds opt-in observations
+without removing native initialization. The detected chip is `CFG_METHOD_30`:
+its C enum value and zero-based chipset-table index both print as `29`.
+
+| Diagnostic event | Linux uptime, s | Observed state |
+| --- | ---: | --- |
+| Before probe exit from out-of-band mode | 5.175878 | Live MCU version `0x0000`, required `0x0083`, read completed |
+| Before PHY configuration | 5.322556 | Local link up; advertisement `0x01e1`, gigabit control `0x0200` |
+| Immediately before native PHY reset | 5.322574 | Live MCU version still `0x0000`, read completed |
+| After native PHY-reset helper | 5.323666 | Local link down; BMSR `0x7989`, advertisement `0x0001`, gigabit control `0x0000` |
+| Native MCU programming path completed | 5.325358 | Cached version `0x0083`, native loaded flag set |
+| After speed/autonegotiation setup | 5.361207 | Local link still down; advertisement `0x0de1`, gigabit control `0x0200` |
+
+Local link was up at every sampled probe/open exit-from-out-of-band, MAC-reset
+and power-up checkpoint before the native PHY-reset helper. That helper also
+clears advertisement; its following snapshot is the first local down observed.
+The peer adapter recorded first up at SCPI **+5.607270 s**, down at
+**+13.283339 s**, and recovery at **+15.844018 s**, an observed **2.560679 s**
+outage. Its 1,967 samples had a maximum completion gap of **37.673 ms** and
+maximum read duration of **0.536 ms**. These local and peer observations use
+different clocks and reporting paths; they do not assign the entire peer outage
+to one instruction or measure a physical link edge.
+
+The pre-reset reads show that the required MCU version was not reported before
+this r8168 PHY reset. They do not prove RAM integrity, contents immediately after
+POR, or state before UEFI/C8 initialization. The native programming marker
+records execution and cached state, not independent verification of every
+firmware word. BMSR reads consume latched history; the MCU getter uses indirect
+address selection and restores the cached page. The added reads/logging affect
+timing, and one boot is insufficient for a new performance claim.
+
+The diagnostic also reports required ADC calibration (`adc_required=1`, offset
+`0x5698`) and a changed link advertisement. Early carrier therefore does not
+establish that the native required firmware, calibration and negotiated policy
+are already complete. **No reset- or firmware-skipping experiment is justified
+by these observations.** The next implementation needs a vendor-qualified
+link-preserving initialization sequence, or full required PHY initialization
+before the accepted first link plus a verified Linux handoff. Native firmware,
+ADC/tuning, EEE, MAC/DMA and recovery behavior must remain correct.
+
+A concrete follow-up is available: the retained source tree includes the
+[vendor Realtek AArch64 PCIe UNDI driver](https://github.com/tianocore/edk2-non-osi/blob/c07d24e45c87d175ad1dc5d74b2c7feed9356503/Drivers/Realtek/Bus/Pcie/PcieNetworking/RtkUndiDxe.inf),
+while the measured minimal UEFI profile disables networking. A controlled UEFI
+variant could test whether that driver performs the required PHY initialization
+earlier. Its firmware version, calibration, shutdown and Linux-handoff behavior
+are unverified; enabling it does not itself establish continuous link or the
+six-second target. No firmware change was made for the measurements above.
+
+Separate post-startup stock-driver traffic checks transferred **128 MiB in each
+direction** at **936.98 / 941.11 Mb/s**, with both payload SHA-256 checks passing.
+The diagnostic driver also passed that transfer check at **937.36 / 941.43 Mb/s**.
+These verify functioning traffic after startup, not traffic during handoff or
+continuous early link.
+
+The stock driver was subsequently restored and verified on a distinct cold boot:
+its original module hash matched, the diagnostic parameter and records were
+absent, CUDA smoke and native boot verification passed, MAXN_SUPER mode 0 and the
+native fan were active, and no systemd units were failed. The temporary shutdown
+hook was removed. The restored link reported 1000 Mb/s full duplex and passed
+another 128 MiB transfer each way at **937.51 / 941.01 Mb/s**, with matching
+payload checksums. This restoration check does not replace the three-run timing
+baseline or resolve its continuous-link failure.
+
 The next work should establish a supported, measurable handoff:
 
 1. Define the POST list. Continuous link through firmware-to-Linux handoff is
@@ -216,6 +282,7 @@ The next work should establish a supported, measurable handoff:
    change. Preserve Linux FFC C7 support, CUDA power policy and native boot/security
    verification. Any attached FFC endpoint needs separate qualification.
 
-This investigation changed no firmware, BCT or driver settings. The cable was
-rewired for the direct peer observer; the host adapter's existing profile was
-retained. The current profile fails the required continuous-link criterion.
+The three-run baseline changed no firmware, BCT or driver settings; subsequent
+driver instrumentation was temporary and the stock driver was restored. The
+cable was rewired for the direct peer observer, retaining the host adapter's
+existing profile. The current profile fails the required continuous-link criterion.

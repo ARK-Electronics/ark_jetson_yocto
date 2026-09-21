@@ -1,0 +1,179 @@
+--- a/drivers/net/ethernet/realtek/r8168/r8168_n.c
++++ b/drivers/net/ethernet/realtek/r8168/r8168_n.c
+@@ -425,6 +425,7 @@
+ 
+ static int use_dac = 1;
+ static int timer_count = 0x2600;
++static bool ark_phy_diag;
+ static int dynamic_aspm_packet_threshold = 10;
+ 
+ static struct {
+@@ -483,6 +484,9 @@
+ 
+ MODULE_AUTHOR("Realtek and the Linux r8168 crew <netdev@vger.kernel.org>");
+ MODULE_DESCRIPTION("RealTek RTL-8168 Gigabit Ethernet driver");
++
++module_param(ark_phy_diag, bool, 0444);
++MODULE_PARM_DESC(ark_phy_diag, "Log PHY initialization state; diagnostic only, default off.");
+ 
+ module_param(speed_mode, uint, 0);
+ MODULE_PARM_DESC(speed_mode, "force phy operation. Deprecated by ethtool (8).");
+@@ -3272,6 +3276,64 @@
+                 u32 RegAddr)
+ {
+         return mdio_real_direct_read_phy_ocp(tp, RegAddr);
++}
++
++/*
++ * Opt-in observation only: do not change PHY settings, cached page or MCU flags.
++ * OCP reads address page zero explicitly; unsupported/diagnostic mode is skipped.
++ * BMSR is read twice because link history is latched low. These reads clear that
++ * history and add polling/logging time, so this is not a benchmark configuration.
++ * valid_mask bits follow bmcr, bmsr_latched, bmsr_current, adv, gctrl order.
++ * The completion flag is a transport observation, not a PHY-state guarantee.
++ */
++static void ark_phy_diag_snapshot(struct rtl8168_private *tp, const char *stage)
++{
++        static const u16 regs[] = {
++                MII_BMCR, MII_BMSR, MII_BMSR, MII_ADVERTISE, MII_CTRL1000
++        };
++        u32 values[ARRAY_SIZE(regs)];
++        u32 valid_mask = 0;
++        unsigned int i;
++        u8 status;
++
++        if (!ark_phy_diag)
++                return;
++
++        status = RTL_R8(tp, PHYstatus);
++        for (i = 0; i < ARRAY_SIZE(regs); i++) {
++                values[i] = 0xffffffff;
++                if (!tp->HwSuppPhyOcpVer || tp->rtk_enable_diag)
++                        continue;
++                values[i] = rtl8168_mdio_read_phy_ocp(tp, 0, regs[i]);
++                if (RTL_R32(tp, PHYOCP) & OCPR_Flag)
++                        valid_mask |= 1U << i;
++        }
++
++        printk(KERN_INFO "ARK_R8168_PHY stage=%s chipset=%d mcfg=%u "
++               "unknown=%u ocp=%u diag=%u page=0x%x phy=0x%02x "
++               "phy_valid=%u link=%u valid_mask=0x%x bmcr=0x%08x "
++               "bmsr_latched=0x%08x bmsr_current=0x%08x adv=0x%08x "
++               "gctrl=0x%08x mcu_cached=0x%04x mcu_expected=0x%04x "
++               "mcu_loaded=%u no_ram_write=%u no_mcu_patch=%u "
++               "adc_required=%u adc_offset=0x%04x autoneg=%u speed=%u "
++               "duplex=%u advertising=0x%x eee=%u\n",
++               stage, tp->chipset, tp->mcfg,
++               (unsigned int)tp->HwIcVerUnknown,
++               (unsigned int)tp->HwSuppPhyOcpVer,
++               (unsigned int)tp->rtk_enable_diag, (unsigned int)tp->cur_page,
++               (unsigned int)status, (unsigned int)(status != 0xff),
++               (unsigned int)(status != 0xff && (status & LinkStatus)),
++               valid_mask, values[0], values[1], values[2], values[3], values[4],
++               (unsigned int)tp->hw_ram_code_ver,
++               (unsigned int)tp->sw_ram_code_ver,
++               (unsigned int)tp->HwHasWrRamCodeToMicroP,
++               (unsigned int)tp->NotWrRamCodeToMicroP,
++               (unsigned int)tp->NotWrMcuPatchCode,
++               (unsigned int)tp->RequireAdcBiasPatch,
++               (unsigned int)tp->AdcBiasPatchIoffset,
++               (unsigned int)tp->autoneg, (unsigned int)tp->speed,
++               (unsigned int)tp->duplex, (unsigned int)tp->advertising,
++               (unsigned int)tp->eee.eee_enabled);
+ }
+ 
+ static void ClearAndSetEthPhyBit(struct rtl8168_private *tp, u8  addr, u16 clearmask, u16 setmask)
+@@ -11132,6 +11194,13 @@
+         int ram_code_ver_match = 0;
+ 
+         tp->hw_ram_code_ver = rtl8168_get_hw_phy_mcu_code_ver(tp);
++
++        if (ark_phy_diag)
++                printk(KERN_INFO "ARK_R8168_PHY stage=mcu_version_check "
++                       "mcfg=%u mcu_read=0x%04x mcu_expected=0x%04x match=%u\n",
++                       tp->mcfg, (unsigned int)tp->hw_ram_code_ver,
++                       (unsigned int)tp->sw_ram_code_ver,
++                       (unsigned int)(tp->hw_ram_code_ver == tp->sw_ram_code_ver));
+ 
+         if (tp->hw_ram_code_ver == tp->sw_ram_code_ver) {
+                 ram_code_ver_match = 1;
+@@ -23129,6 +23198,12 @@
+         rtl8168_mdio_write(tp,0x1F, 0x0000);
+ 
+         tp->HwHasWrRamCodeToMicroP = TRUE;
++        if (ark_phy_diag)
++                printk(KERN_INFO "ARK_R8168_PHY stage=mcu_program_path_done "
++                       "mcfg=%u mcu_cached=0x%04x mcu_expected=0x%04x loaded=%u\n",
++                       tp->mcfg, (unsigned int)tp->hw_ram_code_ver,
++                       (unsigned int)tp->sw_ram_code_ver,
++                       (unsigned int)tp->HwHasWrRamCodeToMicroP);
+ }
+ #endif
+ 
+@@ -23141,6 +23216,7 @@
+         unsigned int i;
+ 
+         tp->phy_reset_enable(dev);
++        ark_phy_diag_snapshot(tp, "phy_config_after_reset");
+ 
+         if (HW_DASH_SUPPORT_TYPE_3(tp) && tp->HwPkgDet == 0x06)
+                 return;
+@@ -23148,6 +23224,7 @@
+ #ifndef ENABLE_USE_FIRMWARE_FILE
+         if (!tp->rtl_fw) {
+                 rtl8168_init_hw_phy_mcu(dev);
++                ark_phy_diag_snapshot(tp, "phy_config_after_mcu");
+         }
+ #endif
+ 
+@@ -28593,11 +28670,15 @@
+         if (rc < 0)
+                 goto err_out;
+ 
++        ark_phy_diag_snapshot(tp, "probe_before_exit_oob");
+         rtl8168_exit_oob(dev);
++        ark_phy_diag_snapshot(tp, "probe_after_exit_oob");
+ 
+         rtl8168_hw_init(dev);
++        ark_phy_diag_snapshot(tp, "probe_before_hw_reset");
+ 
+         rtl8168_hw_reset(dev);
++        ark_phy_diag_snapshot(tp, "probe_after_hw_reset");
+ 
+ 	/* Set Maximum Payload Size (MPS) */
+ 	rc = pcie_set_mps(pdev->bus->self, desired_mps);
+@@ -28985,17 +29066,24 @@
+ #ifdef  CONFIG_R8168_NAPI
+         rtl8168_enable_napi(tp);
+ #endif
++        ark_phy_diag_snapshot(tp, "open_before_exit_oob");
+         rtl8168_exit_oob(dev);
++        ark_phy_diag_snapshot(tp, "open_after_exit_oob");
+ 
+         rtl8168_hw_init(dev);
++        ark_phy_diag_snapshot(tp, "open_before_hw_reset");
+ 
+         rtl8168_hw_reset(dev);
++        ark_phy_diag_snapshot(tp, "open_after_hw_reset");
+ 
+         rtl8168_powerup_pll(dev);
++        ark_phy_diag_snapshot(tp, "open_after_powerup");
+ 
+         rtl8168_hw_ephy_config(dev);
++        ark_phy_diag_snapshot(tp, "open_before_phy_config");
+ 
+         rtl8168_hw_phy_config(dev);
++        ark_phy_diag_snapshot(tp, "open_after_phy_config");
+ 
+         rtl8168_hw_config(dev);
+ 
+@@ -29003,7 +29091,9 @@
+ 
+         clear_bit(R8168_FLAG_DOWN, tp->task_flags);
+ 
++        ark_phy_diag_snapshot(tp, "open_before_set_speed");
+         rtl8168_set_speed(dev, tp->autoneg, tp->speed, tp->duplex, tp->advertising);
++        ark_phy_diag_snapshot(tp, "open_after_set_speed");
+ 
+         if (tp->esd_flag == 0) {
+                 //rtl8168_request_esd_timer(dev);

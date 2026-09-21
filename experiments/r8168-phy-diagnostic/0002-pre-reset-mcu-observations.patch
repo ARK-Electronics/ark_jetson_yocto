@@ -1,0 +1,60 @@
+--- a/drivers/net/ethernet/realtek/r8168/r8168_n.c
++++ b/drivers/net/ethernet/realtek/r8168/r8168_n.c
+@@ -3334,6 +3334,41 @@
+                (unsigned int)tp->autoneg, (unsigned int)tp->speed,
+                (unsigned int)tp->duplex, (unsigned int)tp->advertising,
+                (unsigned int)tp->eee.eee_enabled);
++}
++
++/*
++ * Read the MCU version before native initialization can reset the PHY. Restrict
++ * this observation to the audited H revision and OCP path. The native getter
++ * changes the indirect RAM address selector (A43/13 -> 801E) and selects page
++ * zero; restore the cached page, but do not call the version-check helper or
++ * change cached MCU flags. Read-command/address-selection writes still occur.
++ * Call only at complete function boundaries where the next native operation
++ * selects its own register address. Completion does not prove RAM validity.
++ */
++static void ark_phy_diag_live_mcu(struct rtl8168_private *tp, const char *stage)
++{
++        u32 saved_page;
++        u16 live_version;
++        unsigned int complete;
++
++        if (!ark_phy_diag || tp->mcfg != CFG_METHOD_30 ||
++            !tp->HwSuppPhyOcpVer || tp->rtk_enable_diag)
++                return;
++
++        saved_page = tp->cur_page;
++        live_version = rtl8168_get_hw_phy_mcu_code_ver(tp);
++        complete = !!(RTL_R32(tp, PHYOCP) & OCPR_Flag);
++        rtl8168_mdio_write(tp, 0x1f, saved_page);
++
++        printk(KERN_INFO "ARK_R8168_PHY stage=%s chipset=%d mcfg=%u "
++               "mcu_live=0x%04x mcu_expected=0x%04x complete=%u "
++               "page_before=0x%x page_after=0x%x mcu_cached=0x%04x "
++               "mcu_loaded=%u\n",
++               stage, tp->chipset, tp->mcfg, (unsigned int)live_version,
++               (unsigned int)tp->sw_ram_code_ver, complete,
++               saved_page, (unsigned int)tp->cur_page,
++               (unsigned int)tp->hw_ram_code_ver,
++               (unsigned int)tp->HwHasWrRamCodeToMicroP);
+ }
+ 
+ static void ClearAndSetEthPhyBit(struct rtl8168_private *tp, u8  addr, u16 clearmask, u16 setmask)
+@@ -23215,6 +23250,7 @@
+         u16 gphy_val;
+         unsigned int i;
+ 
++        ark_phy_diag_live_mcu(tp, "phy_config_mcu_before_reset");
+         tp->phy_reset_enable(dev);
+         ark_phy_diag_snapshot(tp, "phy_config_after_reset");
+ 
+@@ -28670,6 +28706,7 @@
+         if (rc < 0)
+                 goto err_out;
+ 
++        ark_phy_diag_live_mcu(tp, "probe_mcu_before_exit_oob");
+         ark_phy_diag_snapshot(tp, "probe_before_exit_oob");
+         rtl8168_exit_oob(dev);
+         ark_phy_diag_snapshot(tp, "probe_after_exit_oob");
