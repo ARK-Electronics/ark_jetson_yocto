@@ -286,3 +286,74 @@ The three-run baseline changed no firmware, BCT or driver settings; subsequent
 driver instrumentation was temporary and the stock driver was restored. The
 cable was rewired for the direct peer observer, retaining the host adapter's
 existing profile. The current profile fails the required continuous-link criterion.
+
+A subsequent UEFI variant **failed the target in one instrumented cold boot**.
+The [variant source and build inputs](../experiments/uefi-realtek/) enable only
+`NETWORKING` and `NETWORKING_DEVICE_REALTEK` relative to the retained minimal
+profile. The resolved security, TPM, persistent-variable, PCIe and remaining
+configuration symbols are unchanged. The RELEASE image contains the vendor
+Realtek PCIe UNDI 2.075 driver; its SHA-256 is recorded in the
+[numeric cold diagnostic result](results/yocto-r39-uefi-realtek-diagnostic.json).
+Only bootloader slot A was flashed for the experiment. MB1/MB2/BCT were not tuned;
+the kernel, root filesystem, diagnostic r8168 module and direct peer observer
+matched the earlier single instrumented cold boot. This is a separate temporary
+firmware experiment, not a change to the three-run baseline above.
+
+| Variant cold observation | Seconds from SCPI command send |
+| --- | ---: |
+| First peer carrier up | 9.895970 |
+| Later peer carrier down | 18.084330 |
+| Peer carrier recovery | 20.908683 |
+| Observed outage duration | 2.824353 |
+
+The first up was 4.288700 s later, and final recovery 5.064665 s later, than the
+prior single instrumented cold boot. These are single-run differences, not a
+repeated performance estimate or identification of the responsible UEFI stage.
+The requested 20 ms observer recorded 1,971 samples, a maximum completion gap of
+47.258 ms and maximum read duration of 0.452 ms. Carrier was observed up after
+recovery through the 40.028354 s final read. Both initial timing and continuity
+failed; CUDA smoke and native boot verification nevertheless passed.
+
+The cold driver snapshots again reported live MCU version `0x0000`, required
+`0x0083`, with completed reads before probe exit from out-of-band mode at Linux
+5.294210 s and immediately before PHY reset at 5.425840 s. Before that reset,
+local status `0x93` indicated a 1000 Mb/s full-duplex link, with advertisement
+`0x01e1` and gigabit control `0x0200`. After the native reset helper at
+5.426940 s, local link was down, advertisement was `0x0001` and gigabit control
+was zero. Native MCU version checking returned a mismatch; its programming path
+completed at 5.428742 s with cached version `0x0083` and the loaded flag set.
+Native final advertisement became `0x0de1`, retaining gigabit control `0x0200`.
+The complete numeric snapshots are retained in the result.
+
+A preceding **warm recovery reboot** had reported live MCU `0x0083` and a native
+version match. Prior Linux could have left that RAM state in place, so the warm
+result is not evidence that UEFI loaded the required firmware. Its early local
+status `0xe6` also indicated **10 Mb/s half duplex**, with advertisement `0x0c21`
+and no gigabit advertisement, unlike the later native gigabit policy. The
+logged `eee=1` is cached requested policy, not proof of active hardware EEE;
+pause advertisement bits likewise do not independently qualify negotiated flow
+control. The warm observations are separate from the cold timing aggregates.
+
+The cold result establishes that this variant did not deliver a matching
+Linux-visible MCU version or continuous link under six seconds. It does **not**
+prove that the UEFI driver never initialized the PHY: vendor programming,
+SNP shutdown/stop, ExitBootServices and PCIe handoff may leave different later
+state. A completed version read is not a RAM-integrity or calibration test.
+No reset-, firmware- or calibration-skipping Linux patch was justified or tested.
+A future attempt still needs vendor-qualified early initialization and handoff,
+including the required firmware, ADC/tuning, advertisement, EEE, MAC/DMA and
+normal recovery behavior.
+
+The retained UEFI was subsequently restored to slot A, and the original stock
+r8168 module hash was verified after a distinct full power-cycle boot. Diagnostic
+parameters/configuration and log records were absent. CUDA smoke and both native
+boot services passed, MAXN_SUPER mode 0 and the native fan were active, no systemd
+units were failed, and the temporary shutdown hook was removed. The restored
+link reported 1000 Mb/s full duplex. Separate post-startup 128 MiB transfers in
+each direction passed both payload checksums at **937.27 / 940.86 Mb/s**. This
+confirms restored operation after startup; it does not replace the three-run
+baseline or resolve its continuous-link failure.
+
+The variant is not accepted for production. SCPI command send remains the time
+reference, with output latency and POR included; no physical power or link edge
+was measured. POST remains undefined and unverified.

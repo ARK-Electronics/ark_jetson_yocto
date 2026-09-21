@@ -1,0 +1,4 @@
+# Preserve exact source and measured-artifact bytes used by provenance hashes.
+* -text
+Realtek-PCIe-License.txt whitespace=cr-at-eol
+resolved.config whitespace=cr-at-eol
