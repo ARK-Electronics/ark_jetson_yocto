@@ -43,9 +43,9 @@ class CollectorTests(unittest.TestCase):
         self.log = self.root / 'requests.jsonl'
         self.env = {**os.environ, 'PATH': str(self.root) + ':' + os.environ['PATH'], 'FAKE_LOG': str(self.log)}
 
-    def run_collector(self, mode='ok'):
+    def run_collector(self, mode='ok', extra=()):
         return subprocess.run([sys.executable, str(COLLECTOR), '--target', 'root@example.invalid',
-                               '--output-dir', str(self.output)], capture_output=True, text=True,
+                               '--output-dir', str(self.output), *extra], capture_output=True, text=True,
                               env={**self.env, 'FAKE_MODE': mode}, timeout=10)
 
     def test_fixed_commands_results_and_verified_key_options(self):
@@ -60,6 +60,17 @@ class CollectorTests(unittest.TestCase):
             self.assertIn('StrictHostKeyChecking=yes', request)
             self.assertIn('BatchMode=yes', request)
         self.assertIn('ark-cuda-bench --repeats 3', [request[-1] for request in requests])
+
+    def test_fixture_host_key_file_preserves_strict_verification(self):
+        known = self.root / 'fixture known_hosts'
+        known.write_text('# Synthetic host-key file; fake SSH never connects.\n')
+        result = self.run_collector(extra=('--known-hosts', str(known)))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for line in self.log.read_text().splitlines():
+            request = json.loads(line)
+            self.assertIn('UserKnownHostsFile="' + str(known) + '"', request)
+            self.assertIn('StrictHostKeyChecking=yes', request)
+            self.assertIn('BatchMode=yes', request)
 
     def test_nonobject_json_reports_failure_without_exception(self):
         result = self.run_collector('null')

@@ -34,6 +34,7 @@ def main():
     parser.add_argument('--output-dir', required=True, type=Path, help='new directory; never overwrite')
     parser.add_argument('--port', type=int, default=22)
     parser.add_argument('--identity', type=Path, help='optional existing SSH private key')
+    parser.add_argument('--known-hosts', type=Path, help='verified host-key file for this fixture; defaults to SSH configuration')
     parser.add_argument('--sudo', action='store_true', help='use noninteractive sudo for power/clock queries and benchmarks')
     parser.add_argument('--timeout', type=float, default=180, help='seconds allowed per remote command')
     parser.add_argument('--cpu-mib', type=int, choices=(64, 256, 1024), default=256)
@@ -50,6 +51,14 @@ def main():
     ssh = ['ssh', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes',
            '-o', 'ConnectTimeout=10', '-o', 'ServerAliveInterval=5',
            '-o', 'ServerAliveCountMax=2', '-p', str(args.port)]
+    if args.known_hosts:
+        host_file = str(args.known_hosts.resolve())
+        if any(c in host_file for c in ('\n', '\r', '$', '%')):
+            parser.error('--known-hosts cannot contain line breaks or SSH expansion tokens')
+        if not args.known_hosts.is_file():
+            parser.error('--known-hosts must be an existing verified host-key file')
+        quoted = host_file.replace('\\', '\\\\').replace('"', '\\"')
+        ssh += ['-o', 'UserKnownHostsFile="' + quoted + '"']
     if args.identity:
         ssh += ['-i', str(args.identity)]
     ssh += ['--', args.target]

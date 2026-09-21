@@ -38,7 +38,7 @@ From a host with an existing verified SSH key connection:
 python3 scripts/bench-target.py --target USER@HOST --output-dir results-new
 ```
 
-Use `--sudo` only when existing noninteractive sudo access is appropriate. The collector executes fixed queries and the two benchmarks, records raw output plus parsed JSON, and checks that the boot ID remained the same. `host_request_wall_s` includes SSH overhead; use each native result's timing fields for benchmark comparisons. Missing readiness files or policy-query permissions remain visible in the report. A timeout stops further submissions; check for a remaining remote command before repeating it. The collector does not reconfigure SSH or accept unknown host keys.
+Use `--identity` and `--known-hosts` for separate private fixture credentials and a verified host-key file. This avoids changing your normal SSH configuration. Use `--sudo` only when existing noninteractive sudo access is appropriate. The collector executes fixed queries and the two benchmarks, records raw output plus parsed JSON, and checks that the boot ID remained the same. `host_request_wall_s` includes SSH overhead; use each native result's timing fields for benchmark comparisons. Missing readiness files or policy-query permissions remain visible in the report. A timeout stops further submissions; check for a remaining remote command before repeating it. The collector does not reconfigure SSH or accept unknown host keys.
 
 ## Summarize cold-boot captures
 
