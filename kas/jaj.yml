@@ -1,0 +1,45 @@
+header:
+  version: 17
+machine: ark-jaj-orin-nx
+distro: ark-headless
+target:
+  - ark-headless-image
+repos:
+  ark:
+    layers:
+      meta-ark:
+  openembedded-core:
+    url: https://github.com/openembedded/openembedded-core.git
+    path: repos/openembedded-core
+    commit: 883075157987ca300af59185b903d6d1977234c3
+    layers:
+      meta:
+  bitbake:
+    url: https://github.com/openembedded/bitbake.git
+    path: repos/bitbake
+    commit: f0df79b6b56f6a69067adf974978d9405077f246
+    layers:
+      .: disabled
+  meta-openembedded:
+    url: https://github.com/openembedded/meta-openembedded.git
+    path: repos/meta-openembedded
+    commit: 14282a02be9c74a1276a7cda7d6c89e054699a11
+    layers:
+      meta-oe:
+      meta-python:
+      meta-networking:
+  meta-tegra:
+    url: https://github.com/OE4T/meta-tegra.git
+    path: repos/meta-tegra
+    commit: 2e37d1673d25fb92440bcf6db8dcf1076e822037
+local_conf_header:
+  ark: |
+    CONF_VERSION = "2"
+    BB_NUMBER_THREADS = "4"
+    PARALLEL_MAKE = "-j 4"
+    DL_DIR = "${TOPDIR}/../downloads"
+    SSTATE_DIR = "${TOPDIR}/../sstate-cache"
+    BB_DISKMON_DIRS = "STOPTASKS,${TMPDIR},20G,100K HALT,${TMPDIR},10G,50K"
+    # Keep intermediates for diagnosis during initial board qualification.
+    INHERIT += "buildhistory"
+    BUILDHISTORY_COMMIT = "0"

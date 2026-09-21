@@ -1,0 +1,12 @@
+/build/
+/downloads/
+/sstate-cache/
+/repos/
+/.kas/
+/local.yml
+/keys/
+/private/
+/artifacts/
+*.log
+__pycache__/
+*.pyc
